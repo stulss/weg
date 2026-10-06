@@ -1,0 +1,108 @@
+.keyword-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+.keyword-actions .button {
+  width: auto;
+  min-height: 31px;
+  padding: 6px 9px;
+  font-size: 8px;
+}
+.keyword-actions .button:disabled {
+  cursor: not-allowed;
+  color: #a3aa9c;
+  border-color: #ecefe8;
+  background: #f8f9f6;
+  transform: none;
+}
+.keyword-feedback {
+  min-height: 0;
+  margin: 0;
+  color: #70834f;
+  font-size: 8px;
+  line-height: 1.65;
+}
+.keyword-feedback:not(:empty) { margin-top: 6px; }
+.keyword-method-note,
+.keyword-limit-note {
+  margin: 7px 0 0;
+  color: #92998f;
+  font-size: 8px;
+  line-height: 1.75;
+}
+.keyword-limit-note {
+  padding: 8px 9px;
+  border-radius: 6px;
+  color: #806b40;
+  background: #fcf8ea;
+}
+.keyword-chip {
+  min-width: min(155px, 100%);
+  max-width: 100%;
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+  padding: 8px 9px;
+  border: 1px solid #e7ecde;
+  border-radius: 7px;
+  color: #566849;
+  background: #fafcf6;
+}
+.keyword-chip.is-matched { border-color: #dce8c5; background: #f3f8e9; }
+.keyword-chip.is-repeated { border-style: dashed; color: #716348; background: #fdfbf5; }
+.keyword-chip.is-repeated.is-matched { background: #f5f7e9; }
+.keyword-card-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+}
+.keyword-kind {
+  overflow: hidden;
+  color: #98a18f;
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.keyword-chip .chip-count { flex: none; color: #8a9a73; font-family: var(--mono); font-size: 8px; }
+.keyword-label {
+  color: #40523e;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.keyword-evidence {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  margin: 0;
+  color: #7e8878;
+  font-size: 7px;
+  line-height: 1.65;
+}
+.keyword-evidence-label { color: #9ba294; }
+.keyword-experience-match {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border: 1px solid #dce8c5;
+  border-radius: 99px;
+  color: #667e49;
+  background: #fbfdf7;
+  font-size: 7px;
+}
+.keyword-experience-match::before { content: '✓'; font-size: 8px; }
+.match-summary[hidden],
+.keyword-limit-note[hidden] { display: none; }
+.result-panel[data-stale="true"] .keyword-actions .button {
+  border-color: #efe3bb;
+}
+@media (max-width: 600px) {
+  .keyword-chip { min-width: min(135px, 100%); padding: 7px 8px; }
+  .keyword-label { font-size: 9px; }
+}

@@ -1,0 +1,181 @@
+/* 1단계: 리추얼 CSV 가져오기, 기록, 연결과 요약 */
+.ritual-manager {
+  position: relative;
+  padding: clamp(18px, 3vw, 30px);
+  margin-top: 26px;
+  margin-bottom: 26px;
+  overflow: visible;
+}
+.ritual-manager-header,
+.ritual-statistics-heading,
+.ritual-preview-heading,
+.ritual-record-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ritual-manager-header > div { min-width: 0; }
+.ritual-manager-header h2 { margin: 4px 0 5px; color: var(--ink-deep); font-size: clamp(19px, 2.5vw, 25px); letter-spacing: -.7px; }
+.ritual-manager-header p { max-width: 780px; margin: 0; color: #788576; font-size: 10px; line-height: 1.8; }
+.ritual-local-badge {
+  flex: none;
+  padding: 6px 9px;
+  border: 1px solid #dfe8d0;
+  border-radius: 99px;
+  color: #6e8052;
+  background: #f7faef;
+  font: 8px/1.2 var(--mono);
+  letter-spacing: .06em;
+}
+.ritual-import-panel { margin-top: 17px; padding: 14px; border: 1px solid #e8ece2; border-radius: 9px; background: #fcfdf9; }
+.ritual-import-controls { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(170px, .8fr) auto; gap: 12px; align-items: end; }
+.ritual-file-field,
+.ritual-date-order-field { min-width: 0; }
+.ritual-file-field label,
+.ritual-date-order-field label,
+.ritual-link-controls label,
+.ritual-filter-field label { display: block; margin-bottom: 6px; color: #52624f; font-size: 9px; font-weight: 650; }
+.ritual-file-field input[type="file"],
+.ritual-date-order-field select,
+.ritual-link-controls select,
+.ritual-filter-field select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px 9px;
+  border: 1px solid #e3e9dc;
+  border-radius: 6px;
+  color: #52624f;
+  background: #fff;
+  font: inherit;
+  font-size: 9px;
+}
+.ritual-file-field input[type="file"] { padding: 7px; }
+.ritual-file-field span,
+.ritual-date-order-field span { display: block; margin-top: 4px; color: #98a094; font-size: 7px; line-height: 1.5; }
+.ritual-import-actions { display: flex; flex: none; gap: 6px; }
+.ritual-import-actions .button { width: auto; min-height: 36px; padding-inline: 10px; font-size: 8px; white-space: nowrap; }
+.ritual-import-actions .button:disabled,
+.ritual-preview-actions .button:disabled,
+.ritual-link-controls .button:disabled { cursor: not-allowed; opacity: .58; transform: none; }
+.ritual-import-status,
+.ritual-link-controls > p { min-height: 16px; margin: 8px 0 0; color: #788576; font-size: 8px; line-height: 1.7; }
+.ritual-import-status.is-error,
+.ritual-link-controls > p.is-error { color: #a35647; }
+.ritual-import-preview { margin-top: 12px; border: 1px solid #e8ece2; border-radius: 8px; background: #fff; overflow: hidden; }
+.ritual-preview-heading { padding: 12px 13px; border-bottom: 1px solid #edf0e9; }
+.ritual-preview-heading h3,
+.ritual-statistics-heading h3,
+.ritual-record-toolbar h3 { margin: 3px 0 0; color: #344638; font-size: 12px; letter-spacing: -.2px; }
+.ritual-preview-heading > span { color: #7f897b; font-size: 8px; text-align: right; }
+.ritual-preview-table-wrap { max-height: 380px; overflow: auto; }
+.ritual-preview-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.ritual-preview-table th,
+.ritual-preview-table td { padding: 7px 8px; border-bottom: 1px solid #eef0ea; color: #717c6e; font-size: 8px; line-height: 1.55; text-align: left; vertical-align: top; }
+.ritual-preview-table th { position: sticky; top: 0; z-index: 1; color: #596851; background: #f8faf5; font-weight: 650; }
+.ritual-preview-table th:nth-child(1),
+.ritual-preview-table td:nth-child(1) { width: 47px; text-align: center; }
+.ritual-preview-table th:nth-child(2),
+.ritual-preview-table td:nth-child(2) { width: 135px; }
+.ritual-preview-table th:nth-child(3),
+.ritual-preview-table td:nth-child(3) { width: 64px; }
+.ritual-preview-table th:nth-child(5),
+.ritual-preview-table td:nth-child(5) { width: 150px; }
+.ritual-preview-table td:nth-child(4) { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ritual-preview-table tr.has-date-warning td { background: #fffaf1; }
+.ritual-preview-date { width: 100%; min-height: 29px; padding: 4px 5px; border: 1px solid #e6eae1; border-radius: 4px; color: #667260; font: 8px var(--mono); }
+.ritual-preview-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-top: 1px solid #edf0e9; }
+.ritual-preview-actions p { margin: 0; color: #8a9387; font-size: 7px; line-height: 1.6; }
+.ritual-preview-actions > div { display: flex; flex: none; gap: 6px; }
+.ritual-preview-actions .button { width: auto; min-height: 32px; padding: 5px 9px; font-size: 8px; white-space: nowrap; }
+.ritual-statistics { margin-top: 22px; padding: 13px; border: 1px solid #e9ede4; border-radius: 8px; background: #f9fbf6; }
+.ritual-statistics-heading { align-items: end; margin-bottom: 9px; }
+.ritual-statistics-heading > span { color: #818c7d; font-size: 8px; }
+.ritual-stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.ritual-stat-grid article { min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid #e9eee3; border-radius: 6px; background: #fff; }
+.ritual-stat-grid article > span { color: #8a9387; font-size: 7px; }
+.ritual-stat-grid strong { color: #43573d; font-size: 17px; letter-spacing: -.3px; }
+.ritual-stat-grid small { color: #9aa196; font-size: 7px; line-height: 1.55; }
+.ritual-record-section { margin-top: 22px; }
+.ritual-record-toolbar { align-items: end; }
+.ritual-record-actions { display: flex; align-items: center; gap: 10px; }
+.ritual-record-actions .button { width: auto; min-height: 31px; padding: 5px 9px; font-size: 8px; white-space: nowrap; }
+.ritual-record-actions .text-button { font-size: 8px; }
+.ritual-filter-bar { position: relative; display: flex; align-items: end; gap: 9px; margin-top: 12px; padding: 10px; border: 1px solid #e8ece2; border-radius: 7px; background: #fcfdf9; }
+.ritual-filter-field { min-width: 130px; }
+.ritual-filter-field label { margin-bottom: 4px; font-size: 8px; }
+.ritual-filter-field select { min-height: 32px; font-size: 8px; }
+.ritual-date-filter { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 190px; min-height: 32px; padding: 5px 8px; border: 1px solid #e3e9dc; border-radius: 6px; color: #5d6b58; background: #fff; cursor: pointer; font: inherit; font-size: 8px; text-align: left; }
+.ritual-date-filter small { color: #9aa196; font-size: 7px; white-space: nowrap; }
+.ritual-filter-count { margin-left: auto; padding: 0 3px 8px; color: #8c9588; font-size: 7px; white-space: nowrap; }
+.ritual-link-controls { display: grid; grid-template-columns: minmax(180px, 1fr) auto; gap: 7px 9px; align-items: end; margin-top: 9px; padding: 10px; border: 1px solid #e8ece2; border-radius: 7px; background: #f9fbf6; }
+.ritual-link-controls label { margin-bottom: 4px; font-size: 8px; }
+.ritual-link-controls .button { width: auto; min-height: 34px; padding: 5px 10px; font-size: 8px; white-space: nowrap; }
+.ritual-link-controls > p { grid-column: 1 / -1; min-height: 12px; margin: 0; }
+.ritual-record-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.ritual-empty-state { grid-column: 1 / -1; margin: 0; padding: 13px; border-radius: 7px; color: #8b9487; background: #f8faf5; font-size: 8px; line-height: 1.7; }
+.ritual-record-card { min-width: 0; padding: 12px; border: 1px solid #e8ece2; border-radius: 8px; background: #fff; }
+.ritual-record-header { display: flex; align-items: start; justify-content: space-between; gap: 8px; padding-bottom: 7px; border-bottom: 1px solid #eef0ea; }
+.ritual-record-header h4 { margin: 0; color: #344638; font-size: 10px; }
+.ritual-record-meta { display: flex; flex: none; flex-direction: column; align-items: end; gap: 3px; color: #929b8f; font: 7px/1.4 var(--mono); }
+.ritual-record-field { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 7px; margin-top: 8px; }
+.ritual-record-field strong { color: #718069; font-size: 7px; font-weight: 650; }
+.ritual-record-field p { min-width: 0; margin: 0; color: #687365; font-size: 8px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ritual-record-links { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 9px; padding-top: 7px; border-top: 1px solid #eef0ea; color: #8a9387; font-size: 7px; }
+.ritual-link-chip { padding: 3px 6px; border: 1px solid #e5ebda; border-radius: 99px; color: #6f8156; background: #f5f8ef; font-size: 7px; }
+.ritual-date-picker { position: absolute; z-index: 20; width: 250px; padding: 11px; border: 1px solid #dfe6d6; border-radius: 9px; background: #fff; box-shadow: 0 12px 32px rgba(47, 64, 44, .14); }
+.ritual-date-picker[hidden] { display: none; }
+.ritual-picker-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.ritual-picker-header strong { color: #445640; font-size: 10px; }
+.ritual-picker-nav { width: 27px; height: 27px; border: 1px solid #e7ece1; border-radius: 5px; color: #66765c; background: #fbfcf8; cursor: pointer; font: 18px/1 sans-serif; }
+.ritual-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.ritual-calendar-weekday { padding: 4px 0; color: #9aa196; font-size: 7px; text-align: center; }
+.ritual-calendar-day { position: relative; min-width: 0; min-height: 27px; border: 0; border-radius: 5px; color: #5e6d59; background: #fff; cursor: pointer; font: 8px var(--mono); }
+.ritual-calendar-day:hover { background: #f2f6eb; }
+.ritual-calendar-day.is-outside { color: #c0c6bc; }
+.ritual-calendar-day.is-selected { color: #fff; background: #7f9858; }
+.ritual-calendar-day.has-records:not(.is-selected)::after { position: absolute; right: 3px; bottom: 2px; width: 3px; height: 3px; border-radius: 50%; background: #91a86a; content: ""; }
+.ritual-picker-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 7px; border-top: 1px solid #eef0ea; }
+.ritual-picker-footer button { padding: 4px 6px; border: 0; color: #778472; background: transparent; cursor: pointer; font: inherit; font-size: 7px; }
+.ritual-privacy-note { margin: 14px 0 0; padding: 10px 11px; border-radius: 6px; color: #828d7c; background: #f8faf4; font-size: 7px; line-height: 1.75; }
+
+@media (max-width: 760px) {
+  .ritual-import-controls { grid-template-columns: minmax(0, 1fr) minmax(145px, .75fr); }
+  .ritual-import-actions { grid-column: 1 / -1; justify-content: flex-start; }
+  .ritual-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ritual-record-list { grid-template-columns: minmax(0, 1fr); }
+  .ritual-preview-table th:nth-child(5), .ritual-preview-table td:nth-child(5) { width: 115px; }
+  .ritual-date-picker { max-width: calc(100vw - 36px); }
+}
+@media (max-width: 560px) {
+  .ritual-manager { padding: 15px 12px; }
+  .ritual-manager-header { align-items: flex-start; }
+  .ritual-manager-header h2 { font-size: 18px; }
+  .ritual-manager-header p { font-size: 8px; }
+  .ritual-local-badge { padding: 5px 7px; font-size: 7px; }
+  .ritual-import-panel { padding: 10px; }
+  .ritual-import-controls { grid-template-columns: minmax(0, 1fr); gap: 9px; }
+  .ritual-import-actions { grid-column: auto; }
+  .ritual-import-actions .button { flex: 1; }
+  .ritual-preview-heading { align-items: flex-start; flex-direction: column; }
+  .ritual-preview-heading > span { text-align: left; }
+  .ritual-preview-table { min-width: 620px; }
+  .ritual-preview-actions { align-items: flex-start; flex-direction: column; }
+  .ritual-preview-actions > div { width: 100%; }
+  .ritual-preview-actions .button { flex: 1; }
+  .ritual-stat-grid { gap: 5px; }
+  .ritual-stat-grid article { padding: 8px; }
+  .ritual-stat-grid strong { font-size: 15px; }
+  .ritual-record-toolbar { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .ritual-record-actions { flex-wrap: wrap; }
+  .ritual-filter-bar { align-items: stretch; flex-wrap: wrap; gap: 7px; }
+  .ritual-filter-field { flex: 1 1 calc(50% - 8px); min-width: 0; }
+  .ritual-date-filter { width: 100%; }
+  .ritual-filter-count { margin-left: 0; padding-bottom: 2px; }
+  .ritual-link-controls { grid-template-columns: minmax(0, 1fr); }
+  .ritual-link-controls > p { grid-column: auto; }
+  .ritual-link-controls .button { width: 100%; }
+  .ritual-record-card { padding: 10px; }
+}

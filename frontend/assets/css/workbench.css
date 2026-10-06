@@ -1,0 +1,177 @@
+.application-manager,
+.experience-library { padding: 19px 22px 15px; margin-bottom: 14px; }
+.manager-header,
+.experience-library-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.manager-title-group h3,
+.experience-library-header h3 { margin: 3px 0 0; color: var(--ink-deep); font-size: 16px; letter-spacing: -.45px; }
+.manager-title-group > p,
+.experience-library-intro { margin: 4px 0 0; color: #838d81; font-size: 9px; line-height: 1.8; }
+.manager-actions { display: flex; align-items: center; gap: 8px; }
+.manager-actions .button { width: auto; min-width: 119px; }
+.manager-save-button { min-height: 36px; padding-inline: 12px; font-size: 9px; }
+.manager-save-button > span { font-size: 12px; }
+.manager-meta { display: flex; align-items: center; justify-content: space-between; gap: 15px; min-height: 34px; margin-top: 12px; padding-top: 9px; border-top: 1px solid #edf0e9; }
+.manager-meta > p { margin: 0; color: #788576; font-size: 8px; line-height: 1.6; }
+.manager-meta > p.is-error,
+.library-feedback.is-error { color: #a35647; }
+.application-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 10px; }
+.application-list[hidden] { display: none; }
+.application-card { min-width: 0; padding: 11px; border: 1px solid #e8ece2; border-radius: 8px; background: #fdfefb; }
+.application-card.is-current { border-color: #cfdda9; background: #fbfdf6; box-shadow: inset 3px 0 #b5cb78; }
+.application-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.application-company { overflow: hidden; color: #344638; font-size: 10px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.application-status { flex: none; padding: 3px 7px; border-radius: 99px; color: #667d45; background: #f0f5e7; font-size: 7px; }
+.application-status[data-status="제출 완료"] { color: #466c50; background: #eaf4e8; }
+.application-status[data-status="면접 진행"] { color: #725f9c; background: #f1eef9; }
+.application-status[data-status="마감"] { color: #8b8174; background: #f1f0ed; }
+.application-role { overflow: hidden; margin: 4px 0 7px; color: #7b8578; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.application-meta { display: flex; justify-content: space-between; gap: 8px; padding-top: 6px; border-top: 1px solid #eef0ea; color: #969e92; font-size: 7px; }
+.application-card-controls { display: grid; grid-template-columns: minmax(84px, 1fr) minmax(120px, 1.15fr) auto auto; gap: 5px; align-items: center; margin-top: 8px; }
+.application-status-select,
+.application-deadline { min-width: 0; width: 100%; height: 29px; padding: 4px 6px; border: 1px solid #e6eae1; border-radius: 5px; color: #657260; background: #fff; font-size: 8px; }
+.application-deadline { font-family: var(--mono); font-size: 7px; }
+.button-small { min-height: 28px; padding: 4px 8px; border-radius: 5px; font-size: 8px; white-space: nowrap; }
+.button-small:disabled { cursor: default; opacity: .65; transform: none; }
+.button-delete { color: #997369; border-color: #efe6e2; background: #fffafa; }
+.button-delete:hover { border-color: #e6cdc5; background: #fcf2ef; }
+.application-empty { margin: 0; padding: 11px 12px; border-radius: 7px; color: #8b9487; background: #f8faf5; font-size: 8px; line-height: 1.7; }
+.application-empty[hidden] { display: none; }
+.manager-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 9px; margin-top: 9px; border-top: 1px solid #edf0e9; }
+.manager-footer > p { margin: 0; color: #9aa196; font-size: 7px; }
+.text-button { padding: 4px 2px; border: 0; color: #829072; background: transparent; cursor: pointer; font-size: 8px; }
+.text-button:hover { color: #526d39; text-decoration: underline; text-underline-offset: 3px; }
+.danger-text-button { flex: none; color: #a07569; }
+.danger-text-button:hover { color: #8e5145; }
+.text-button:disabled { cursor: not-allowed; color: #b5bbb2; text-decoration: none; }
+
+.experience-library { padding-top: 16px; padding-bottom: 12px; background: #fff; }
+.experience-library-header h3 { font-size: 14px; }
+.experience-library-intro { margin-top: 3px; }
+.experience-library-controls { display: grid; grid-template-columns: minmax(155px, 1.1fr) auto minmax(160px, 1fr) auto auto; gap: 7px; align-items: end; margin-top: 11px; }
+.experience-select-group { min-width: 0; }
+.experience-select-group label { display: block; margin-bottom: 4px; color: #556450; font-size: 8px; font-weight: 550; }
+.experience-select-group select { width: 100%; min-height: 33px; padding: 6px 8px; border: 1px solid #e5e9e1; border-radius: 6px; color: #687465; background: #fdfefb; font: inherit; font-size: 8px; }
+.experience-library-controls > .button { min-height: 33px; padding: 6px 9px; font-size: 8px; white-space: nowrap; }
+.experience-library-controls > input { min-height: 33px; font-size: 8px; }
+.experience-library-controls > input::placeholder { font-size: 8px; }
+.experience-library-controls > .text-button { min-height: 31px; }
+.library-feedback { min-height: 12px; margin: 6px 1px 0; color: #879180; font-size: 7px; line-height: 1.6; }
+
+@media (max-width: 960px) {
+  .application-manager,
+  .experience-library { padding-inline: 17px; }
+  .application-card-controls { grid-template-columns: minmax(80px, .8fr) minmax(115px, 1fr) auto auto; }
+  .experience-library-controls { grid-template-columns: minmax(0, 1.2fr) auto minmax(0, 1fr) auto; }
+  .experience-library-controls > .text-button { grid-column: 4; justify-self: end; min-height: auto; }
+}
+@media (max-width: 600px) {
+  .application-manager,
+  .experience-library { padding: 15px 13px 12px; margin-bottom: 11px; }
+  .manager-header { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .manager-title-group h3 { font-size: 15px; }
+  .manager-title-group > p { font-size: 8px; }
+  .manager-actions { width: 100%; }
+  .manager-actions .button { flex: 1; min-width: 0; padding-inline: 8px; font-size: 8px; }
+  .manager-meta { align-items: flex-start; gap: 8px; }
+  .manager-meta > p { font-size: 7px; }
+  .application-list { grid-template-columns: 1fr; }
+  .application-card { padding: 10px; }
+  .application-card-controls { grid-template-columns: minmax(80px, 1fr) minmax(100px, 1fr) auto auto; gap: 4px; }
+  .application-status-select,
+  .application-deadline { padding-inline: 4px; font-size: 7px; }
+  .button-small { padding-inline: 6px; font-size: 7px; }
+  .manager-footer { align-items: flex-start; }
+  .manager-footer > p { max-width: 70%; line-height: 1.6; }
+  .experience-library-header { align-items: center; }
+  .experience-library-controls { grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+  .experience-select-group { grid-column: 1; }
+  .experience-library-controls > #loadExperienceButton { grid-column: 2; align-self: end; }
+  .experience-library-controls > input { grid-column: 1; }
+  .experience-library-controls > #saveExperienceButton { grid-column: 2; }
+  .experience-library-controls > .text-button { grid-column: 1 / -1; justify-self: start; min-height: 24px; }
+}
+@media (max-width: 380px) {
+  .application-card-controls { grid-template-columns: minmax(72px, 1fr) minmax(94px, 1.05fr) auto auto; }
+  .application-deadline { letter-spacing: -.06em; }
+  .manager-actions .button { font-size: 7px; }
+}
+
+/* 경험 카드는 지원서 메모와 분리해 작성·수정하고 다시 불러올 수 있습니다. */
+.experience-card-form {
+  margin-top: 13px;
+  padding: 14px;
+  border: 1px solid #e8eee0;
+  border-radius: 8px;
+  background: #fbfcf8;
+}
+.experience-editor-heading,
+.experience-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.experience-editor-heading > div { min-width: 0; }
+.experience-editor-heading h4 { margin: 3px 0 0; color: #344638; font-size: 12px; letter-spacing: -.2px; }
+.experience-editor-heading p { margin: 3px 0 0; color: #838d81; font-size: 8px; line-height: 1.65; }
+.experience-editor-heading .import-experience-button { flex: none; width: auto; min-height: 31px; padding: 5px 8px; border: 1px solid #e5e9e1; border-radius: 6px; font-size: 8px; }
+.experience-card-form .field-group { min-width: 0; }
+.experience-name-field { max-width: 560px; margin-top: 12px; }
+.experience-card-form input,
+.experience-card-form textarea { color: #344638; background: #fff; }
+.experience-card-form input { min-height: 35px; font-size: 9px; }
+.experience-card-form textarea { min-height: 80px; font-size: 9px; line-height: 1.8; }
+.experience-card-form input::placeholder,
+.experience-card-form textarea::placeholder { font-size: 8px; }
+.experience-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 13px; }
+.experience-editor-grid .field-group { margin-top: 11px; }
+.experience-editor-footer { align-items: end; margin-top: 13px; padding-top: 10px; border-top: 1px solid #edf0e9; }
+.experience-editor-footer > p { max-width: 520px; margin: 0; color: #889187; font-size: 8px; line-height: 1.7; }
+.experience-editor-actions { display: flex; flex: none; align-items: center; justify-content: flex-end; gap: 7px; }
+.experience-editor-actions .button { width: auto; min-height: 34px; padding: 6px 10px; font-size: 8px; white-space: nowrap; }
+.experience-editor-actions .button-primary { min-width: 122px; }
+.experience-editor-actions [hidden] { display: none; }
+.experience-editor-actions .button-primary > span { font-size: 11px; }
+.experience-library-controls { grid-template-columns: minmax(180px, 1fr) auto; gap: 8px; margin-top: 11px; }
+.experience-library-controls > .button { width: auto; min-height: 33px; padding-inline: 10px; }
+.experience-select-group select:focus-visible { outline: 3px solid rgba(145, 180, 58, .65); outline-offset: 3px; }
+.experience-card-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 10px; }
+.experience-card-empty { grid-column: 1 / -1; margin: 0; padding: 11px 12px; border-radius: 7px; color: #8b9487; background: #f8faf5; font-size: 8px; line-height: 1.7; }
+.experience-card { min-width: 0; padding: 11px; border: 1px solid #e8ece2; border-radius: 8px; background: #fdfefb; }
+.experience-card.is-editing { border-color: #cfdda9; background: #fbfdf6; box-shadow: inset 3px 0 #b5cb78; }
+.experience-card-heading { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+.experience-card-heading h4 { min-width: 0; margin: 1px 0 0; color: #344638; font-size: 10px; font-weight: 650; line-height: 1.6; overflow-wrap: anywhere; }
+.experience-card-actions { display: flex; flex: none; align-items: center; gap: 5px; }
+.experience-card-actions .button-small { min-height: 25px; padding: 3px 7px; font-size: 7px; }
+.experience-card-actions .button-small:disabled { cursor: default; opacity: .7; }
+.experience-card-delete { font-size: 8px; }
+.experience-card-content { display: grid; gap: 6px; margin-top: 9px; }
+.experience-card-content p { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 7px; margin: 0; color: #7a8578; font-size: 8px; line-height: 1.7; }
+.experience-card-content strong { color: #687761; font-size: 7px; font-weight: 600; }
+.experience-card-content span { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.experience-card-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.experience-card-tag { padding: 3px 6px; border: 1px solid #e5ebda; border-radius: 99px; color: #6f8156; background: #f5f8ef; font-size: 7px; line-height: 1.45; }
+.experience-card-footer { margin-top: 9px; padding-top: 6px; border-top: 1px solid #eef0ea; color: #9aa196; font-size: 7px; }
+.experience-editor-actions .button:disabled,
+.experience-library-controls > .button:disabled { cursor: not-allowed; opacity: .6; transform: none; }
+
+@media (max-width: 600px) {
+  .experience-card-form { padding: 12px 10px; }
+  .experience-editor-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .experience-editor-heading .import-experience-button { align-self: flex-start; }
+  .experience-name-field { max-width: none; }
+  .experience-editor-grid { grid-template-columns: minmax(0, 1fr); }
+  .experience-card-form textarea { min-height: 72px; }
+  .experience-editor-footer { align-items: flex-start; flex-direction: column; gap: 9px; }
+  .experience-editor-actions { width: 100%; }
+  .experience-editor-actions .button-primary { flex: 1; }
+  .experience-library-controls { grid-template-columns: minmax(0, 1fr) auto; }
+  .experience-card-list { grid-template-columns: minmax(0, 1fr); }
+  .experience-card-content p { grid-template-columns: 54px minmax(0, 1fr); }
+}
+@media (max-width: 380px) {
+  .experience-editor-actions .button { padding-inline: 7px; font-size: 7px; }
+  .experience-library-controls > .button { padding-inline: 7px; font-size: 7px; }
+  .experience-card { padding: 9px; }
+  .experience-card-heading h4 { font-size: 9px; }
+}
