@@ -14,6 +14,11 @@
   <link rel="stylesheet" href="assets/css/ritual-manager.css">
   <link rel="stylesheet" href="assets/css/career-tabs.css">
   <link rel="stylesheet" href="assets/css/visual-refresh.css">
+  <link rel="stylesheet" href="assets/css/supabase-resume.css">
+  <link rel="stylesheet" href="assets/css/supabase-auth.css">
+  <script src="assets/js/supabase-config.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+  <script src="assets/js/supabase-resume-store.js" defer></script>
   <script src="assets/js/ritual-core.js" defer></script>
   <script src="assets/js/career-core.js" defer></script>
   <script src="assets/js/draft-inspection-core.js" defer></script>
@@ -24,6 +29,8 @@
   <script src="assets/js/draft-generator.js" defer></script>
   <script src="assets/js/draft-stage4.js" defer></script>
   <script src="assets/js/resume-builder.js" defer></script>
+  <script src="assets/js/supabase-resume-ui.js" defer></script>
+  <script src="assets/js/supabase-auth-ui.js" defer></script>
   <script src="assets/js/workbench.js" defer></script>
   <script src="assets/js/ritual-manager.js" defer></script>
 </head>
@@ -44,7 +51,13 @@
         <a href="#ritualManager">리추얼 기록</a>
         <a href="#resumeBuilder">이력서</a>
       </nav>
-      <div class="privacy-pill"><span class="privacy-dot" aria-hidden="true"></span> 데이터는 브라우저에 저장</div>
+      <div id="plenAuthControls" class="plen-auth-controls" aria-label="계정">
+        <button class="button button-secondary" id="plenGoogleSignIn" type="button">Google 로그인 / 회원가입</button>
+        <span id="plenSignedInLabel" hidden></span>
+        <button class="button button-quiet" id="plenGoogleSignOut" type="button" hidden>로그아웃</button>
+        <span id="plenAuthStatus" class="visually-hidden" role="status" aria-live="polite"></span>
+      </div>
+      <div class="privacy-pill"><span class="privacy-dot" aria-hidden="true"></span> 로컬 저장 · 이력서 클라우드 선택 저장</div>
     </div>
   </header>
 
@@ -88,7 +101,7 @@
             <div class="star-editor-grid"><div class="field-group"><label for="cardSituation">S 상황</label><textarea id="cardSituation" rows="3"></textarea></div><div class="field-group"><label for="cardTask">T 과제</label><textarea id="cardTask" rows="3"></textarea></div><div class="field-group"><label for="cardAction">A 행동</label><textarea id="cardAction" rows="3"></textarea></div><div class="field-group"><label for="cardResult">R 결과</label><textarea id="cardResult" rows="3"></textarea></div></div>
             <div class="field-row"><div class="field-group"><label for="cardRepeatDays">반복 관측 일수</label><input id="cardRepeatDays" type="number" min="0" max="365"></div><div class="field-group" style="flex:2"><label for="cardTags">역량 태그</label><input id="cardTags" type="text" placeholder="쉼표로 구분"></div></div>
             <div class="field-group"><label>바깥 증거</label><div class="field-row"><input id="cardEvidenceWho" type="text" placeholder="누가"><input id="cardEvidenceWhen" type="text" placeholder="언제"><input id="cardEvidenceQuote" type="text" placeholder="피드백 문구"></div></div>
-            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="button button-outline" type="button" id="cardFormCancelBtn" hidden>수정 취소</button><button class="button button-primary" type="submit" id="cardFormSubmitBtn">경험 카드 등록</button></div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="button button-quiet" type="button" id="cardFormCancelBtn" hidden>수정 취소</button><button class="button button-primary" type="submit" id="cardFormSubmitBtn">경험 카드 등록</button></div>
           </form>
         </section>
         <section class="panel"><div class="panel-heading"><div><div class="panel-index"><span>LIBRARY</span> SAVED CARDS</div><h3>등록된 경험 카드 목록</h3></div></div><div class="v2-card-grid" id="v2ExperienceList"></div></section>

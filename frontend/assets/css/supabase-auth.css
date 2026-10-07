@@ -1,0 +1,56 @@
+#plenAuthControls,
+.plen-auth-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+#plenAuthControls [hidden],
+#resumeCloudPanel [hidden] {
+  display: none !important;
+}
+#plenSignedInLabel {
+  max-width: 180px;
+  overflow: hidden;
+  color: var(--muted, #667064);
+  font-size: .84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#plenGoogleSignIn {
+  white-space: nowrap;
+}
+#plenAuthControls .button {
+  min-height: 40px;
+}
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+@media (max-width: 1000px) {
+  #plenAuthControls,
+  .plen-auth-controls {
+    justify-content: flex-start;
+  }
+  #plenSignedInLabel {
+    max-width: 140px;
+  }
+}
+@media (max-width: 600px) {
+  #plenAuthControls,
+  .plen-auth-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  #plenAuthControls .button {
+    flex: 1 1 auto;
+  }
+}

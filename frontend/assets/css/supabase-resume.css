@@ -1,0 +1,26 @@
+#resumeCloudPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 16px;
+  align-items: end;
+  margin: 0 0 20px;
+  padding: 18px 20px;
+  border: 1px solid var(--line, #dfe4da);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+}
+#resumeCloudPanel .resume-cloud-copy { grid-column: 1 / -1; }
+#resumeCloudPanel h4 { margin: 0 0 5px; }
+#resumeCloudPanel p { margin: 0; color: var(--muted, #667064); font-size: .9rem; line-height: 1.55; }
+#resumeCloudPanel .resume-cloud-controls { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+#resumeCloudEmail { min-width: min(260px, 70vw); }
+#resumeCloudStatus { grid-column: 1 / -1; min-height: 1.35em; margin: 0; font-size: .9rem; }
+#resumeCloudStatus.is-error { color: #a33b32; }
+#resumeCloudStatus.is-success { color: #276947; }
+#resumeCloudUser { align-self: center; color: var(--muted, #667064); font-size: .88rem; }
+@media (max-width: 680px) {
+  #resumeCloudPanel { grid-template-columns: 1fr; }
+  #resumeCloudPanel .resume-cloud-controls { display: grid; grid-template-columns: 1fr; }
+  #resumeCloudEmail { width: 100%; box-sizing: border-box; }
+  #resumeCloudUser { grid-row: auto; }
+}

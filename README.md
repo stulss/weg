@@ -13,8 +13,18 @@
 - **팩트 시트 → 1인칭 초안:** 선택한 카드로 팩트 시트를 작성하고 사용자가 확인한 뒤 규칙 기반 초안을 편집합니다. 선택 경험 밖의 임의 서술은 자동으로 완벽히 막을 수 없으므로 사용자가 원자료를 대조해야 합니다.
 - **9개 검사:** 키워드, 카드에 없는 숫자, 글자 수, 날짜·STAR, 금지 형용사, 첫 문단 강점, 바깥 증거, 기록 보완 표기, 직접 완성 상태를 점검합니다. 휴리스틱이며 사실 인증이 아닙니다.
 - **리추얼 CSV:** 미리보기·날짜 변환·중복 제거·경험 카드 연결·기록 통계 기능이 있습니다.
-- **이력서:** 기본 정보·프로필·경력·프로젝트·학력·기술·역량·자격·수상 항목 작성, 미리보기 및 내보내기를 지원합니다.
+- **이력서:** 기본 정보·프로필·경력·프로젝트·학력·기술·역량·자격·수상 항목 작성, 미리보기 및 TXT 내보내기를 지원합니다.
+- **Google 로그인·회원가입(설정 후):** Google OAuth로 로그인하고, 처음 이용하는 계정은 Supabase Auth에 가입됩니다. 이메일·비밀번호 로그인은 제공하지 않습니다.
+- **이력서 Supabase 저장(설정 후):** 로그인 사용자의 이력서 저장·불러오기를 지원합니다. RLS가 적용된 Supabase 테이블이 필요합니다.
 - **회사별 지원 자료:** 공고와 입력 내용을 회사별로 저장하고 진행 상황을 관리할 수 있습니다.
+
+## Google 로그인 및 Supabase 이력서 연결
+
+초기 설정은 [`SUPABASE_SETUP.md`](SUPABASE_SETUP.md)를 참고하세요. Google Cloud OAuth 웹 클라이언트 설정과 Supabase Google Provider 활성화, SQL migration, Redirect URL 등록, `frontend/assets/js/supabase-config.js`의 Project URL 및 anon/publishable key 설정이 필요합니다. Secret/service role 키나 Google Client Secret은 브라우저에 넣지 마세요.
+
+현재 Supabase 데이터 연동 범위는 **이력서만**입니다. 로그인 후에도 경험 카드·리추얼·채용공고·지원 건·자기소개서는 기존처럼 localStorage에 저장됩니다. Vercel 환경 변수로 프런트엔드 비밀 키를 숨기거나 실행 가능한 MVC API 서버를 만든 것은 아닙니다. Supabase JS SDK는 CDN에서 로드합니다.
+
+Supabase 프로젝트, Google OAuth Provider, 인증 redirect URL, SQL 및 배포 설정은 사용자가 대시보드에서 완료해야 합니다. 실제 Supabase 연결이나 배포는 이 작업 환경에서 수행하지 않았습니다.
 
 ## 자소서 작성 사용 흐름
 
@@ -40,11 +50,18 @@ node checks.js
 
 ## 저장과 개인정보
 
-자료는 브라우저 `localStorage`에 보관되며 동기화나 서버 백업은 없습니다. 공용 기기에서는 저장을 피하고, 경험 카드 및 리추얼에 포함된 본인·동료 개인정보를 입력하거나 공유할 때 주의하세요.
+경험 카드·리추얼·공고·지원 자료는 브라우저 `localStorage`에 보관됩니다. 이력서는 로컬 저장을 유지하면서, 사용자가 Google 로그인 후 직접 클라우드 저장을 누르면 Supabase에도 저장됩니다. 동기화 범위는 이력서뿐입니다. 공용 기기에서는 저장을 피하고, 경험 카드 및 리추얼과 이력서에 포함된 본인·동료 개인정보를 입력하거나 공유할 때 주의하세요.
 
 ## 주요 파일
 
 - `frontend/index.html`: 화면과 스크립트 연결
+- `frontend/assets/js/supabase-config.js`: Supabase Project URL 및 공개 anon/publishable key 설정 자리
+- `frontend/assets/js/supabase-resume-store.js`: Supabase Google Auth 및 RLS 적용 이력서 데이터 호출
+- `frontend/assets/js/supabase-auth-ui.js`: 헤더 Google 로그인·회원가입/로그아웃 UI
+- `frontend/assets/js/supabase-resume-ui.js`: 이력서 화면 로그인·저장·불러오기 UI
+- `frontend/assets/css/supabase-auth.css`: 계정 UI 스타일
+- `supabase/migrations/202609220001_resume_profiles.sql`: 이력서 테이블과 RLS 정책
+- `SUPABASE_SETUP.md`: Google OAuth와 Supabase 설정·배포 후 확인 절차
 - `frontend/assets/js/career-core.js`: 경험·공고 키워드·팩트 시트·기본 9개 검사 로직
 - `frontend/assets/js/career-ui.js`: 경험/공고/초안 화면 이벤트 및 9개 검사 화면 갱신
 - `frontend/assets/js/draft-workflow-core.js`: 팩트 시트 검증과 1인칭 규칙 변환
