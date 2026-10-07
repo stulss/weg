@@ -26,6 +26,12 @@
 
 Supabase 프로젝트, Google OAuth Provider, 인증 redirect URL, SQL 및 배포 설정은 사용자가 대시보드에서 완료해야 합니다. 실제 Supabase 연결이나 배포는 이 작업 환경에서 수행하지 않았습니다.
 
+## 보안 설정
+
+프로젝트 루트의 `vercel.json`에 `X-Frame-Options: DENY`, CSP 등 응답 헤더를 설정했습니다. Supabase Auth에서 Google만 켜고 사용하지 않는 로그인 Provider를 끄는 절차, JWT 만료 시간을 기본 1시간으로 유지하고 Refresh Token Rotation 기본값을 유지하는 점검 목록은 [`SECURITY_SETUP.md`](SECURITY_SETUP.md)에 있습니다.
+
+CSP의 `script-src`는 인라인 스크립트와 인라인 이벤트 핸들러를 허용하지 않습니다. 기존 HTML의 `style` 속성 및 JS의 요소 `.style` 조작은 `style-src-attr`에서 호환 목적으로 허용하므로, 더 엄격한 스타일 정책에는 이를 외부 CSS/class로 옮기는 후속 작업이 필요합니다. Vercel에 배포한 뒤 응답 헤더와 Console을 확인해야 합니다. Supabase 대시보드 설정과 Vercel 배포는 이 환경에서 수행하지 않았습니다.
+
 ## 자소서 작성 사용 흐름
 
 1. 경험 카드에 실제 사실과 출처를 입력하고, 채용공고 탭에서 공고를 붙여넣어 키워드를 검토합니다.
@@ -55,6 +61,8 @@ node checks.js
 ## 주요 파일
 
 - `frontend/index.html`: 화면과 스크립트 연결
+- `vercel.json`: Vercel 보안 응답 헤더
+- `SECURITY_SETUP.md`: Vercel CSP와 Supabase Auth 점검 절차
 - `frontend/assets/js/supabase-config.js`: Supabase Project URL 및 공개 anon/publishable key 설정 자리
 - `frontend/assets/js/supabase-resume-store.js`: Supabase Google Auth 및 RLS 적용 이력서 데이터 호출
 - `frontend/assets/js/supabase-auth-ui.js`: 헤더 Google 로그인·회원가입/로그아웃 UI
