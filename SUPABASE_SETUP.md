@@ -1,18 +1,17 @@
-# plen Google 로그인·Supabase 이력서 설정
+# plen Google 로그인·Supabase 전체 데이터 동기화 설정
 
-현재 Supabase 연동 범위는 **Google OAuth 로그인/회원가입**과 로그인 사용자의 **이력서 저장·불러오기**입니다. Google OAuth는 Supabase Auth가 계정을 관리하며, 처음 Google 계정으로 로그인할 때 Supabase Auth 사용자 계정이 만들어집니다. 별도의 비밀번호 회원가입은 제공하지 않습니다.
+현재 Supabase 연동 범위는 **Google OAuth 로그인/회원가입**, 로그인 사용자의 **이력서 단독 저장**, 그리고 **전체 작업공간(경험 카드, 채용공고 분석, 자기소개서 팩트시트/초안 히스토리, 리추얼 기록·연결) 실시간 자동 동기화**입니다. Google OAuth는 Supabase Auth가 계정을 관리하며, 처음 Google 계정으로 로그인할 때 Supabase Auth 사용자 계정이 만들어집니다.
 
-경험 카드, 리추얼, 채용공고, 지원 건, 자기소개서 초안은 아직 Supabase로 전송하지 않고 기존 브라우저 `localStorage`에 남습니다. 따라서 로그인만으로 이 자료들이 기기 간 동기화되지는 않습니다.
+브라우저의 `localStorage` 변경 사항이 감지되면 자동으로 Supabase `user_workspaces` 테이블에 실시간 동기화되며, 로그인 시 원격 클라우드 자료와 로컬 자료가 자동 병합되어 기기 간 연속 작업이 가능합니다.
 
 ## 1. Supabase 테이블 및 접근 정책 만들기
 
-Supabase 대시보드에서 프로젝트를 열고 **SQL Editor → New query**에 다음 파일 내용을 붙여 실행합니다.
+Supabase 대시보드에서 프로젝트를 열고 **SQL Editor → New query**에서 다음 마이그레이션 파일들을 차례로 실행합니다 (이미 자동 실행 완료됨).
 
-```text
-supabase/migrations/202609220001_resume_profiles.sql
-```
+1. `supabase/migrations/202609220001_resume_profiles.sql` (이력서 단독 저장 테이블)
+2. `supabase/migrations/202609220002_user_workspaces.sql` (전체 작업공간 실시간 동기화 테이블)
 
-테이블은 `public.resume_profiles`입니다. RLS(Row Level Security)를 켜고 `auth.uid() = user_id` 정책을 설정하여 로그인한 사용자가 자기 행만 읽고 쓰게 합니다. SQL Editor 실행 후 Table Editor에서 테이블과 RLS가 만들어졌는지 확인합니다.
+두 테이블 모두 RLS(Row Level Security)가 활성화되어 `auth.uid() = user_id` 정책으로 로그인한 사용자 본인의 데이터만 접근할 수 있습니다.
 
 ## 2. Google 로그인만 허용하도록 설정
 
