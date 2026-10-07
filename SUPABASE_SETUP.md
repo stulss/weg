@@ -24,7 +24,7 @@ Google Cloud Console에서 OAuth 2.0 클라이언트(웹 애플리케이션)를 
 - **Authorized redirect URIs**에 Supabase가 안내하는 callback URL을 추가합니다. 보통 아래 형식입니다. `<project-ref>`는 실제 Supabase 프로젝트 참조값으로 바꿉니다.
 
 ```text
-https://<project-ref>.supabase.co/auth/v1/callback
+https://tbumlutxmehsmdodwira.supabase.co/auth/v1/callback
 ```
 
 Google Cloud에서 발급된 OAuth Client ID와 Client Secret을 Supabase의 Google Provider 설정에 입력하고 저장합니다. Client Secret은 Google Cloud와 Supabase 대시보드에만 두며 프런트엔드 파일, 채팅, Git 저장소에 넣지 마세요. Google OAuth 동의 화면이 테스트 상태라면 테스트 사용자도 등록해야 합니다.
@@ -42,12 +42,12 @@ Redirect URLs: https://weg-lime.vercel.app/**
 
 ## 4. 공개 브라우저 설정 입력
 
-`frontend/assets/js/supabase-config.js`를 열어 다음 값을 입력합니다.
+`frontend/assets/js/supabase-config.js`에 설정된 값:
 
 ```js
 window.PLEN_SUPABASE_CONFIG = {
-  url: 'https://<project-ref>.supabase.co',
-  anonKey: '<anon 또는 publishable key>'
+  url: 'https://tbumlutxmehsmdodwira.supabase.co',
+  anonKey: 'sb_publishable_yYUGgf5zpE1HLIgL2FUEMA_shkBJCEw'
 };
 ```
 

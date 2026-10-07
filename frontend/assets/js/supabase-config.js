@@ -4,6 +4,6 @@
  * service_role/secret key는 절대로 여기에 넣지 마세요.
  */
 window.PLEN_SUPABASE_CONFIG = {
-  url: '',
-  anonKey: ''
+  url: 'https://tbumlutxmehsmdodwira.supabase.co',
+  anonKey: 'sb_publishable_yYUGgf5zpE1HLIgL2FUEMA_shkBJCEw'
 };
