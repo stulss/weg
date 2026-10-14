@@ -192,6 +192,37 @@ test('v1 자료를 v2 지원 건·경험 카드·리추얼 키로 한 번 이전
   assert.equal(read('plen-ritual-records-v1').length, 1); assert.deepEqual(read('plen-ritual-links-v1'), { r1: ['v1card'] });
   rerun(); assert.equal(read('plen-v2-applications').items.length, 2); assert.equal(read('plen-v2-experiences').length, 1);
 });
+async function runDraftApi({ method = 'POST', auth = 'Bearer t', body, quota = { allowed: true, remaining: 9 }, reply } = {}) {
+  const api = require('./api/draft.js');
+  const res = { headers: {}, setHeader(k, v) { this.headers[k] = v; }, end(text) { this.body = JSON.parse(text); } };
+  const calls = [];
+  const client = { beta: { messages: { create: async (params) => { calls.push(params); return reply || { stop_reason: 'end_turn', model: 'claude-opus-5-5', content: [{ type: 'text', text: '초안 본문' }], usage: { input_tokens: 10, output_tokens: 20 } }; } } } };
+  await api.handler({ method, headers: { authorization: auth }, body }, res, { client, verifyUser: async () => ({ id: 'u1' }), consumeQuota: async () => quota });
+  return { status: res.statusCode, body: res.body, calls };
+}
+const apiBody = {
+  question: '문항', limit: 700, keywords: [{ word: '데이터 분석' }],
+  facts: [...factSheet.map((item) => ({ text: item.text, filled: false, expTitle: card.title })), { text: `연락처 me@example.com 010-1234-5678 ${core.MISSING_RECORD_LABEL}`, filled: true, expTitle: card.title }],
+  cards: [{ title: card.title, repeatDays: card.repeatDays }]
+};
+const pendingAsync = [];
+function testAsync(label, fn) { pendingAsync.push(fn().then(() => completed.push(label))); }
+testAsync('AI 초안 API: 인증·검증·한도·모델 요청 형식', async () => {
+  assert.equal((await runDraftApi({ method: 'GET' })).status, 405);
+  assert.equal((await runDraftApi({ auth: '', body: apiBody })).status, 401);
+  assert.equal((await runDraftApi({ body: { ...apiBody, limit: 50 } })).status, 400);
+  assert.equal((await runDraftApi({ body: { ...apiBody, facts: [{ text: '표기 없음', filled: true, expTitle: card.title }] } })).status, 400);
+  assert.equal((await runDraftApi({ body: apiBody, quota: { allowed: false, remaining: 0 } })).status, 429);
+  const ok = await runDraftApi({ body: apiBody });
+  assert.equal(ok.status, 200); assert.equal(ok.body.draft, '초안 본문'); assert.equal(ok.body.remaining, 9);
+  const params = ok.calls[0];
+  assert.equal(params.model, 'claude-opus-5-5'); assert.equal(params.fallbacks, 'default'); assert.deepEqual(params.betas, ['server-side-fallback-2026-07-01']);
+  const prompt = params.messages[0].content;
+  assert.match(prompt, /가입 흐름 개선/); assert.match(prompt, /대표 경험/); assert.match(prompt, /700자/);
+  assert.doesNotMatch(prompt, /me@example\.com|010-1234-5678/);
+  const refused = await runDraftApi({ body: apiBody, reply: { stop_reason: 'refusal', content: [], usage: {} } });
+  assert.equal(refused.status, 422);
+});
 test('초안 생성·편집·검사 스크립트가 브라우저 화면에 연결됨', () => {
   const html = fs.readFileSync(path.join(__dirname, 'frontend/index.html'), 'utf8');
   const ui = fs.readFileSync(path.join(__dirname, 'frontend/assets/js/career-ui.js'), 'utf8');
@@ -239,6 +270,8 @@ test('9/9 실패: 직접 완성 미체크 또는 자동 초안과 동일', () =>
   fails('userFinished', goodDraft, { userFinished: false }); fails('userFinished', goodDraft, { aiDraft: goodDraft });
 });
 
+Promise.all(pendingAsync).then(() => {
 console.log(`${completed.length}개 테스트 케이스 정의 완료`);
 completed.forEach((label, index) => console.log(`${index + 1}. ${label}`));
 console.log('합성 fixture입니다. 실제 공고 3건 완성 기준 검증은 사용자의 자료가 제공되기 전까지 미실행입니다.');
+}).catch((error) => { console.error(error); process.exitCode = 1; });

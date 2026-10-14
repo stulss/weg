@@ -198,6 +198,37 @@
       try { state.aiDraft = workflow.generateFirstPersonDraft(state.factSheet, chosenCards(), { question: state.question, keywords: job.keywords || [], limit: Number(el('v2DraftLimit').value) || state.limit }); state.finalText = state.aiDraft; state.userFinished = false; saveDraft(); renderWorkspace(); el('v2DraftWorkspace')?.scrollIntoView({ behavior: 'smooth' }); }
       catch (error) { alert(error.message); }
     });
+    // AI 초안: 확인된 팩트 시트를 서버 함수(/api/draft)로 보내 Claude 초안을 받습니다. 결과는 규칙 기반 초안과 같은 자리(aiDraft)에 들어가
+    // 같은 9개 검사와 "직접 수정 + 완료 체크" 조건을 거쳐야 저장됩니다.
+    el('btnGenerateAiDraft')?.addEventListener('click', async () => {
+      const button = el('btnGenerateAiDraft'), status = el('v2AiDraftStatus');
+      const say = (message) => { if (status) status.textContent = message; };
+      if (!state.factSheetConfirmed) return alert('팩트 시트를 확인 완료해 주세요.');
+      const cards = chosenCards(); if (!cards.length) return alert('사용할 경험 카드를 선택하세요.');
+      const store = window.plenSupabaseResumeStore;
+      let token = '';
+      try { token = store?.configured ? await store.getAccessToken() : ''; } catch (_error) { token = ''; }
+      if (!token) return alert('AI 초안은 Google 로그인 후 사용할 수 있습니다.');
+      if (state.finalText && state.finalText !== state.aiDraft && !confirm('편집 중인 초안을 AI 초안으로 바꿀까요?')) return;
+      button.disabled = true; say('AI 초안을 만드는 중입니다… (최대 1분)');
+      try {
+        const response = await fetch('/api/draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            question: state.question, limit: Number(el('v2DraftLimit').value) || state.limit, keywords: (job.keywords || []).map((item) => item.word),
+            facts: state.factSheet.map((item) => ({ text: item.text, filled: item.filled === true, expTitle: item.expTitle })),
+            cards: cards.map((card) => ({ title: card.title, repeatDays: card.repeatDays }))
+          })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.draft) { say(''); return alert(result.error || `AI 초안을 만들지 못했습니다. (${response.status})`); }
+        state.aiDraft = result.draft; state.finalText = result.draft; state.userFinished = false; saveDraft(); renderWorkspace();
+        say(`AI 초안을 받았습니다. 오늘 남은 횟수 ${result.remaining}회. 사실과 대조해 직접 고친 뒤 완료 체크하세요.`);
+        el('v2DraftWorkspace')?.scrollIntoView({ behavior: 'smooth' });
+      } catch (_error) { say(''); alert('네트워크 오류로 AI 초안을 만들지 못했습니다.'); }
+      finally { button.disabled = false; }
+    });
     el('v2FinalText')?.addEventListener('input', (event) => { state.finalText = event.target.value; state.userFinished = false; if (el('v2UserFinishedCheckbox')) el('v2UserFinishedCheckbox').checked = false; saveDraft(); updateInspection(); });
     el('v2UserFinishedCheckbox')?.addEventListener('change', (event) => { state.userFinished = event.target.checked; saveDraft(); updateInspection(); });
     el('v2DraftLimit')?.addEventListener('input', (event) => { state.limit = Number(event.target.value) || 700; saveDraft(); updateInspection(); });

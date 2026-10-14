@@ -1,0 +1,14 @@
+{
+  "name": "plen",
+  "private": true,
+  "description": "경험 기반 맞춤 자기소개서 웹앱 (정적 프론트엔드 + Vercel 서버 함수)",
+  "scripts": {
+    "test": "node checks.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.129.0"
+  }
+}

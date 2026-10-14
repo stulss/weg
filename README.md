@@ -4,7 +4,7 @@
 
 ## 실행 및 구조
 
-배포 주소는 https://weg-lime.vercel.app 입니다. 로컬에서는 브라우저로 `frontend/index.html`을 열어 실행합니다. 실제 화면 코드는 `frontend/`에 있습니다. 데이터 저장은 브라우저 `localStorage`와 Supabase(로그인 시)를 사용하며, 별도로 실행하는 API 서버는 없습니다. `backend/`에는 Python 모델·컨트롤러 초안이 있지만 실행 진입점이 없고 화면에서 사용하지 않습니다.
+배포 주소는 https://weg-lime.vercel.app 입니다. 로컬에서는 브라우저로 `frontend/index.html`을 열어 실행합니다. 실제 화면 코드는 `frontend/`에 있습니다. 데이터 저장은 브라우저 `localStorage`와 Supabase(로그인 시)를 사용합니다. 서버 코드는 AI 초안용 Vercel 함수 `api/draft.js` 하나뿐입니다. `backend/`에는 Python 모델·컨트롤러 초안이 있지만 실행 진입점이 없고 화면에서 사용하지 않습니다.
 
 ## 주요 기능
 
@@ -42,7 +42,17 @@ CSP의 `script-src`는 인라인 스크립트와 인라인 이벤트 핸들러�
 5. 확인된 팩트 시트에서 규칙 기반 1인칭 초안을 만들고, 직접 사실과 문장을 검토·편집합니다.
 6. 오른쪽 9개 검사 결과를 확인합니다. 기록 공백 표기 검사는 실패하면 저장을 차단합니다. 사용자가 직접 수정하고 완료 체크를 해야 새 기록으로 저장할 수 있습니다.
 
-현재 초안 기능은 AI 생성이 아니라 템플릿·규칙 기반이며, MVC 백엔드와 AI Gateway는 구현되지 않았습니다. 규칙 검사 통과만으로 경험의 진위나 글의 적합성이 보증되지는 않습니다.
+초안은 두 가지 방법으로 만들 수 있습니다. "1인칭 초안 만들기"는 템플릿·규칙 기반으로 브라우저에서 만들고, "AI 초안 만들기 (Claude)"는 확인된 팩트 시트를 서버 함수로 보내 Claude가 씁니다. 어느 쪽이든 같은 9개 검사를 거치고, 사용자가 직접 고치고 완료 체크해야 저장됩니다. 검사 통과만으로 경험의 진위나 글의 적합성이 보증되지는 않습니다.
+
+## AI 초안 (Claude)
+
+- **동작:** `api/draft.js`(Vercel 서버 함수)가 팩트 시트·공고 키워드·문항·글자 수 제한만 받아 `claude-opus-5-5`로 초안을 만듭니다. 팩트 시트에 없는 사실을 만들지 말 것, "(기록 없음 — 채운 부분)" 표기 유지, 피드백 인용문 원문 유지, 대표 경험(10일 이상 반복)을 첫 문단에 둘 것, 글자 수 제한을 지시합니다. 안전 분류기로 거절되면 `fallbacks: "default"`(베타 `server-side-fallback-2026-07-01`)로 Anthropic이 권장하는 모델에서 다시 시도합니다.
+- **보호 장치:** Google 로그인 사용자만 호출할 수 있습니다(서버가 Supabase 토큰을 확인). 사용자별 하루 한도(기본 10회, 최대 50회)를 Supabase 함수 `consume_ai_draft_quota`로 차감합니다. 입력 크기를 제한하고(팩트 40문장, 총 12,000자, 글자 수 제한 100~3,000자), 이메일·전화번호 형태는 가려서 보냅니다. 한 번 생성에 드는 비용은 대략 0.05~0.15달러입니다(입력 약 2~3천 토큰, 출력·사고 약 2~5천 토큰 기준 추정).
+- **설정 (Vercel → Project → Settings → Environment Variables):**
+  - `ANTHROPIC_API_KEY` (필수): Anthropic Console에서 발급한 API 키. 브라우저 코드나 Git에는 넣지 않습니다. 없으면 버튼을 눌렀을 때 "아직 설정되지 않았습니다"로 응답합니다.
+  - `AI_DRAFT_DAILY_LIMIT` (선택): 사용자별 하루 횟수, 기본 10.
+  - Supabase SQL Editor에서 `supabase/migrations/202610140001_ai_draft_usage.sql`을 실행해야 사용량 한도가 동작합니다.
+- **한계:** 실패한 호출도 하루 횟수 1회를 차감합니다. Anthropic Console에서 월 지출 한도도 함께 설정해 두기를 권장합니다.
 
 ## 검사와 검증 상태
 
@@ -83,6 +93,8 @@ node checks.js
 - `frontend/assets/js/v1-migration.js`: v1 자료를 v2 지원 건·경험 카드·리추얼 키로 한 번 이전
 - `frontend/assets/js/ritual-manager.js`, `ritual-core.js`: 리추얼 CSV 가져오기·통계·경험 카드 연결 (`plen-ritual-records-v1`, `plen-ritual-links-v1`)
 - `frontend/assets/js/resume-builder.js`: 이력서 작성, v2 경험 카드에서 경력 항목 가져오기
-- `checks.js`: Node.js 자동 검사
+- `api/draft.js`: AI 초안 Vercel 서버 함수 (인증·한도·Claude 호출)
+- `supabase/migrations/202610140001_ai_draft_usage.sql`: AI 초안 사용량 테이블과 한도 차감 함수
+- `checks.js`: Node.js 자동 검사 (`npm test`)
 - `plan_v2.md`: 현재 계획 및 실제 자료 완성 기준 표
 - `remaining-plan.md`: 남은 단계와 확인 상태

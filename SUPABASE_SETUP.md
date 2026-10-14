@@ -10,6 +10,7 @@ Supabase 대시보드에서 프로젝트를 열고 **SQL Editor → New query**�
 
 1. `supabase/migrations/202609220001_resume_profiles.sql` (이력서 단독 저장 테이블)
 2. `supabase/migrations/202609220002_user_workspaces.sql` (전체 작업공간 실시간 동기화 테이블)
+3. `supabase/migrations/202610140001_ai_draft_usage.sql` (AI 초안 사용량 테이블과 하루 한도 차감 함수 — AI 초안을 쓸 때만 필요)
 
 두 테이블 모두 RLS(Row Level Security)가 활성화되어 `auth.uid() = user_id` 정책으로 로그인한 사용자 본인의 데이터만 접근할 수 있어야 합니다. SQL을 실행하기 전후로 대시보드에서 정책 적용 여부를 확인하세요.
 

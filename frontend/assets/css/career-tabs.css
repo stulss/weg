@@ -492,3 +492,4 @@
 .v2-application-bar select, .v2-application-bar input { width: auto; flex: 0 0 auto; }
 .v2-application-bar #v2ApplicationSelect { flex: 1 1 220px; min-width: 0; width: auto; }
 .v2-application-bar .button { min-height: 34px; padding: 5px 10px; font-size: .82rem; }
+.ai-draft-status { align-self: center; color: #5b6b52; font-size: .82rem; }

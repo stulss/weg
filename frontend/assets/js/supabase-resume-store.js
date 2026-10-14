@@ -25,6 +25,7 @@
     const { error } = await requireClient().auth.signInWithOAuth({ provider: 'google', options: redirectTo ? { redirectTo } : {} });
     if (error) throw error;
   }
+  async function getAccessToken() { const { data, error } = await requireClient().auth.getSession(); if (error) throw error; return data.session?.access_token || ''; }
   async function signOut() { const { error } = await requireClient().auth.signOut(); if (error) throw error; }
   async function loadResume() {
     const active = requireClient(), user = await getUser();
@@ -69,7 +70,7 @@
     });
     saveQueue = task; return task;
   }
-  window.plenSupabaseResumeStore = { configured, getUser, signInWithGoogle, signOut, loadResume, saveResume, deleteResume, loadWorkspace, saveWorkspace };
+  window.plenSupabaseResumeStore = { configured, getUser, getAccessToken, signInWithGoogle, signOut, loadResume, saveResume, deleteResume, loadWorkspace, saveWorkspace };
   function startWorkspaceSync() {
     if (loaderStarted) return;
     loaderStarted = true;
