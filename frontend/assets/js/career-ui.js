@@ -169,7 +169,7 @@
     });
     el('btnGenerateDraft')?.addEventListener('click', () => {
       if (!state.factSheetConfirmed) return alert('팩트 시트를 확인 완료해 주세요.');
-      try { state.aiDraft = workflow.generateFirstPersonDraft(state.factSheet, chosenCards(), { question: state.question }); state.finalText = state.aiDraft; state.userFinished = false; saveDraft(); renderWorkspace(); el('v2DraftWorkspace')?.scrollIntoView({ behavior: 'smooth' }); }
+      try { state.aiDraft = workflow.generateFirstPersonDraft(state.factSheet, chosenCards(), { question: state.question, keywords: job.keywords || [], limit: Number(el('v2DraftLimit').value) || state.limit }); state.finalText = state.aiDraft; state.userFinished = false; saveDraft(); renderWorkspace(); el('v2DraftWorkspace')?.scrollIntoView({ behavior: 'smooth' }); }
       catch (error) { alert(error.message); }
     });
     el('v2FinalText')?.addEventListener('input', (event) => { state.finalText = event.target.value; state.userFinished = false; if (el('v2UserFinishedCheckbox')) el('v2UserFinishedCheckbox').checked = false; saveDraft(); updateInspection(); });

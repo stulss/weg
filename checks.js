@@ -95,6 +95,43 @@ test('팩트 시트 출처 확인 및 규칙 기반 1인칭 초안 생성', () =
   const draft = draftWorkflow.generateFirstPersonDraft(factSheet, [card], { question: '직무 역량' });
   assert.match(draft, /가입 흐름 개선/); assert.match(draft, /2026-03-02/); assert.match(draft, new RegExp(quote));
 });
+test('명사형 카드 문장을 자연스러운 1인칭 문장으로 변환', () => {
+  const nounCard = core.normalizeExperienceCard({
+    id: 'exp_noun', title: '정산 대시보드 구축', dateFrom: '2026-03-02', dateTo: '2026-04-10', repeatDays: 21,
+    situation: '정산 확인에 매주 2시간이 걸리던 상황', task: '집계 대시보드를 만드는 과제',
+    action: '총무와 협업해 화면을 다듬음', result: '확인 시간이 10분으로 줄어듦',
+    evidence: [{ who: '총무', when: '2026-04', quote: '정산 확인이 거의 없어졌다' }]
+  });
+  const draft = draftWorkflow.generateFirstPersonDraft(core.generateFactSheet([nounCard]), [nounCard]);
+  assert.match(draft, /걸리던 상황에서 시작되었습니다/); assert.match(draft, /만드는 것이었습니다/);
+  assert.match(draft, /다듬는 행동을 직접 실행했습니다/); assert.match(draft, /줄어드는 성과가 있었습니다/);
+  assert.doesNotMatch(draft, /상황 상황|다듬음 |줄어듦 |하였습니다/);
+});
+test('빈 칸은 지어내지 않고 기록 없음 표기로 남김', () => {
+  const facts = core.generateFactSheet([{ ...card, result: '' }]);
+  const filled = facts.filter((item) => item.filled);
+  assert.equal(filled.length, 1); assert.match(filled[0].text, /아직 기록하지 않았다/);
+  assert.ok(filled[0].text.includes(core.MISSING_RECORD_LABEL));
+});
+test('글자 수 제한에 맞춰 뒤쪽 카드 문장부터 줄이고 근거 있는 키워드만 연결', () => {
+  const second = core.normalizeExperienceCard({
+    id: 'exp_second', title: '두 번째 경험', dateFrom: '2026-05-01', dateTo: '2026-05-10', repeatDays: 3,
+    situation: '문의가 많던 상황', task: '안내 문구를 비교하는 실험 설계', action: '두 문구를 번갈아 게시함', result: '문의가 줄어듦',
+    evidence: [{ who: '조교', when: '2026-05', quote: '문의가 줄었다' }]
+  });
+  const cards = [card, second];
+  const facts = core.generateFactSheet(cards);
+  const full = draftWorkflow.generateFirstPersonDraft(facts, cards, { keywords });
+  const limited = draftWorkflow.generateFirstPersonDraft(facts, cards, { keywords, limit: full.length - 60 });
+  assert.ok(limited.length <= full.length - 60, `${limited.length}자는 제한보다 깁니다.`);
+  assert.match(limited, new RegExp(quote)); assert.match(limited, /가입 흐름 개선/);
+  const keywordLine = full.split('\n\n').pop();
+  assert.match(keywordLine, /실험 설계/); assert.doesNotMatch(keywordLine, /사용자 조사/);
+});
+test('영문 약어 키워드는 다른 단어 속에서 잡지 않음', () => {
+  const found = core.extractJobKeywords('Python과 SQL로 대시보드를 만듭니다.\nDocs 문서를 정리합니다.', 5).map((item) => item.word);
+  assert.ok(found.includes('데이터베이스')); assert.ok(!found.includes('사용자 경험 개선'));
+});
 test('초안 생성·편집·검사 스크립트가 브라우저 화면에 연결됨', () => {
   const html = fs.readFileSync(path.join(__dirname, 'frontend/index.html'), 'utf8');
   const ui = fs.readFileSync(path.join(__dirname, 'frontend/assets/js/career-ui.js'), 'utf8');
@@ -117,7 +154,7 @@ function fails(ruleId, text, override = {}) {
   assert.ok(rule, `${ruleId} 결과가 있어야 합니다.`); assert.equal(rule.passed, false, `${ruleId} 실패 사례가 잘못 통과했습니다.`);
   return report;
 }
-test('1/9 실패: 키워드 4/5 미만', () => fails('keyword', goodDraft.replace('사용자 조사', '사용자 인터뷰')));
+test('1/9 실패: 키워드 4/5 미만', () => fails('keyword', goodDraft.replace('사용자 조사', '사용자 인터뷰').replace('실험 설계', '실험')));
 test('2/9 실패: 카드에 없는 숫자 탐지', () => {
   const report = fails('unregistered', `${goodDraft}\n미확인 수치 987654321%`);
   assert.match(report.results.find((item) => item.ruleId === 'unregistered').detail, /987654321/);

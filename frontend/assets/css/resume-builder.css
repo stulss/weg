@@ -182,6 +182,7 @@
 }
 .resume-entry-editor .resume-form-grid { gap: 9px; }
 .resume-entry-editor textarea { min-height: 76px; }
+.resume-entry-editor-title { margin: 0 0 7px; color: #435044; font-size: .82rem; font-weight: 700; }
 .resume-entry-controls {
   display: flex;
   justify-content: flex-end;

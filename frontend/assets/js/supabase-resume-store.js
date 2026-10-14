@@ -13,7 +13,13 @@
   }
   if (client) client.auth.onAuthStateChange((event, session) => dispatchAuth(event, session));
   function requireClient() { if (!client) throw new Error('Supabase 설정이 없습니다. Project URL, 공개 키와 Supabase JS SDK를 확인해 주세요.'); return client; }
-  async function getUser() { const { data, error } = await requireClient().auth.getUser(); if (error) throw error; return data.user || null; }
+  async function getUser() {
+    const { data, error } = await requireClient().auth.getUser();
+    // 로그인하지 않은 상태는 오류가 아니라 사용자 없음으로 처리합니다.
+    if (error && (error.name === 'AuthSessionMissingError' || /auth session missing/i.test(error.message || ''))) return null;
+    if (error) throw error;
+    return data.user || null;
+  }
   async function signInWithGoogle() {
     const redirectTo = /^https?:$/.test(location.protocol) ? location.href : undefined;
     const { error } = await requireClient().auth.signInWithOAuth({ provider: 'google', options: redirectTo ? { redirectTo } : {} });

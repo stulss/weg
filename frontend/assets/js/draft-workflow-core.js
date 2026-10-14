@@ -48,8 +48,11 @@
       .replace(/피드백을 받았다\./g, '피드백을 받았습니다.')
       .replace(/반복 관측되었다\./g, '반복 관측되었습니다.')
       .replace(/배움을 얻었다\./g, '배웠습니다.')
-      .replace(/였다\./g, '였습니다.')
+      .replace(/시작되었다\./g, '시작되었습니다.')
+      .replace(/않았다/g, '않았습니다')
       .replace(/하였다\./g, '했습니다.')
+      .replace(/이었다\./g, '이었습니다.')
+      .replace(/였다\./g, '였습니다.')
       .replace(/한다\./g, '합니다.');
   }
 
@@ -82,25 +85,64 @@
     }
 
     const orderedCards = [leadCard, ...normalizedCards.filter((card) => card.id !== leadCard.id)];
-    const paragraphs = [];
-    orderedCards.forEach((card) => {
-      const lines = factSheet
-        .filter((item) => item.expId === card.id)
-        .map((item) => toFirstPerson(item.text.trim()))
-        .filter(Boolean);
-      if (!lines.length) return;
-      const period = formatPeriod(card);
-      const heading = `저는 ${period} '${card.title}' 경험을 바탕으로 다음 사실을 정리했습니다. (${card.repeatDays}일 반복 관측)`;
-      paragraphs.push([heading, ...lines].join('\n'));
-    });
+    let lines = orderedCards.flatMap((card) => factSheet
+      .filter((item) => item.expId === card.id)
+      .map((item) => ({ cardId: card.id, kind: item.kind || '', filled: item.filled === true, text: toFirstPerson(item.text.trim()) }))
+      .filter((line) => line.text));
 
-    if (!paragraphs.length || !paragraphs[0].includes(leadCard.id) && !paragraphs[0].includes(leadCard.title)) {
-      throw new Error('첫 강점 카드에 연결된 확인 팩트가 없습니다. 팩트 시트를 확인해 주세요.');
+    const keywords = (Array.isArray(options.keywords) ? options.keywords : [])
+      .map((item) => typeof item === 'string' ? item : item && item.word)
+      .filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim());
+
+    // 공고 키워드 중 실제로 남아 있는 카드 내용에서 근거를 찾을 수 있는 것만 마지막 문단에 연결합니다.
+    function keywordParagraph(currentLines) {
+      const usedIds = new Set(currentLines.map((line) => line.cardId));
+      const source = orderedCards.filter((card) => usedIds.has(card.id))
+        .map((card) => [card.title, card.situation, card.task, card.action, card.result, ...(card.tags || [])].join(' '))
+        .join(' ').toLowerCase();
+      const covered = keywords.filter((word) => career.keywordTerms(word).some((term) => career.countTerm(source, term.toLowerCase()) > 0));
+      return covered.length ? `이 경험들에는 공고가 요구하는 ${covered.join(', ')} 역량이 드러납니다.` : '';
     }
 
-    const question = typeof options.question === 'string' ? options.question.trim() : '';
-    const questionHeading = question ? `[문항: ${question}]` : '';
-    return [questionHeading, ...paragraphs].filter(Boolean).join('\n\n');
+    function render(currentLines) {
+      const paragraphs = orderedCards.map((card) => currentLines.filter((line) => line.cardId === card.id).map((line) => line.text).join(' ')).filter(Boolean);
+      if (!paragraphs.length) return '';
+      const lead = paragraphs[0];
+      if (!lead.includes(leadCard.title) || !lead.includes(`${leadCard.repeatDays}일`)) {
+        paragraphs[0] = `'${leadCard.title}'(${formatPeriod(leadCard)})에서 ${leadCard.repeatDays}일간 반복한 행동을 소개합니다. ${lead}`;
+      }
+      return [...paragraphs, keywordParagraph(currentLines)].filter(Boolean).join('\n\n');
+    }
+
+    // 글자 수 제한을 넘으면 뒤쪽 카드의 덜 중요한 문장부터 뺍니다.
+    // 첫 강점 카드 문장, 기록 없음 표기 문장, 유일한 바깥 증거 문장은 검사 규칙에 필요하므로 남깁니다.
+    const limit = Number(options.limit);
+    if (Number.isFinite(limit) && limit > 0) {
+      const trimOrder = ['repeat', 'evidence', 'situation', 'task', 'result', 'action', ''];
+      const removable = (line) => {
+        if (line.cardId === leadCard.id || line.filled) return false;
+        if (line.kind === 'evidence') return lines.filter((item) => item.kind === 'evidence').length > 1;
+        return true;
+      };
+      while (render(lines).length > limit) {
+        let target = null;
+        for (const kind of trimOrder) {
+          for (const card of orderedCards.slice(1).reverse()) {
+            target = lines.find((line) => line.cardId === card.id && line.kind === kind && removable(line));
+            if (target) break;
+          }
+          if (target) break;
+        }
+        if (!target) break;
+        lines = lines.filter((line) => line !== target);
+      }
+    }
+
+    const draft = render(lines);
+    if (!draft || !draft.split('\n\n')[0].includes(leadCard.title)) {
+      throw new Error('첫 강점 카드에 연결된 확인 팩트가 없습니다. 팩트 시트를 확인해 주세요.');
+    }
+    return draft;
   }
 
   const api = { MISSING_RECORD_LABEL, isRealDate, validateFactSheet, toFirstPerson, generateFirstPersonDraft };
