@@ -492,3 +492,25 @@
 .v2-application-bar select, .v2-application-bar input { width: auto; flex: 0 0 auto; }
 .v2-application-bar #v2ApplicationSelect { flex: 1 1 220px; min-width: 0; width: auto; }
 .v2-application-bar .button { min-height: 34px; padding: 5px 10px; font-size: .82rem; }
+
+/* 지원 건 안의 문항 탭 */
+.question-bar { margin-top: 16px; padding: 12px; border: 1px solid #e3e8dc; border-radius: 9px; background: #fafbf7; }
+.question-bar-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.question-bar-head strong { color: #2f3a30; font-size: .9rem; }
+.question-bar-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.question-bar-actions .button { min-height: 32px; padding: 4px 10px; font-size: .8rem; }
+.question-tabs { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.question-tab { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; padding: 9px 11px; border: 1px solid #d9dfd2; border-radius: 8px; background: #fff; color: #435044; font: inherit; text-align: left; cursor: pointer; }
+.question-tab:hover { border-color: #9fb39a; }
+.question-tab.is-active { border-color: var(--accent-strong, #92b34a); box-shadow: inset 0 0 0 1px var(--accent-strong, #92b34a); background: var(--sage, #eff4e8); }
+.question-tab strong { font-size: .8rem; color: var(--ink, #20352c); }
+.question-tab .question-tab-text { width: 100%; overflow: hidden; font-size: .82rem; white-space: nowrap; text-overflow: ellipsis; }
+.question-tab small { color: #6b7568; font-size: .74rem; }
+.question-tab.is-saved small { color: #15803d; }
+#v2QuestionMessage { margin: 8px 0 0; color: #15803d; font-size: .8rem; }
+#v2QuestionMessage:empty { display: none; }
+@media (max-width: 560px) { .question-tabs { grid-template-columns: 1fr 1fr; } .question-bar-head { flex-direction: column; align-items: flex-start; } }
+/* 초안에 쓸 경험 카드 체크박스: 공통 input 스타일(전체 폭)을 덮어써 한 줄로 표시합니다. */
+#v2DraftCardSelector label { display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #e3e8dc; border-radius: 8px; background: #fff; cursor: pointer; font-weight: 500; }
+#v2DraftCardSelector label:has(input:checked) { border-color: var(--accent-strong, #92b34a); background: var(--sage, #eff4e8); }
+#v2DraftCardSelector input[type="checkbox"] { flex: 0 0 auto; width: 18px; height: 18px; min-height: 0; margin: 0; padding: 0; accent-color: var(--accent-strong, #92b34a); }

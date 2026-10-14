@@ -20,31 +20,58 @@
     text: `[담당 업무]\n- 데이터 분석을 기반으로 프로덕트 주요 지표를 지속적으로 개선하고 사용자 행동 로그를 분석합니다.\n- 복잡한 비즈니스 문제 정의 및 근본적인 문제 해결 방안을 도출합니다.\n- 개발자, 디자이너와의 원활한 협업 및 커뮤니케이션을 리드합니다.\n- 사용자 경험 개선을 위해 정기적인 사용자 인터뷰와 사용성 조사를 주도합니다.\n- 성과 측정을 위한 가설 검증과 실험 설계, A/B 테스트를 실행합니다.\n\n[자격 요건]\n- 2년 이상의 프로덕트 기획 또는 데이터 기반 서비스 개선 경험이 있으신 분\n- 정량적 지표와 정성적 사용자 피드백을 모두 활용하여 의사결정을 내릴 수 있는 분\n- 프로젝트 일정 관리 및 스프린트 운영에 능숙하신 분`
   };
   const DEFAULT_DRAFT = { question: '지원동기 및 직무 역량을 본인의 실제 경험을 바탕으로 서술해 주세요.', limit: 700, usedExpIds: [], factSheet: [], factSheetConfirmed: false, aiDraft: '', finalText: '', userFinished: false, drafts: [] };
+  const MAX_QUESTIONS = 10;
   const freshDraft = () => JSON.parse(JSON.stringify(DEFAULT_DRAFT));
-  let experiences = [], job = { company: '', role: '', text: '', keywords: [] }, state = freshDraft(), editingId = null;
-  // 지원 건: 공고(job)와 초안 상태(state)를 회사별로 따로 보관합니다. 경험 카드는 모든 지원 건이 함께 씁니다.
+  const newId = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+  const freshQuestion = (source = {}) => ({ ...freshDraft(), ...source, id: newId('q') });
+  let experiences = [], job = { company: '', role: '', text: '', keywords: [] }, state = freshQuestion(), editingId = null;
+  // 지원 건: 공고(job)와 문항 목록(questions)을 회사별로 따로 보관합니다. state는 지금 편집 중인 문항입니다.
+  // 경험 카드는 모든 지원 건이 함께 씁니다.
   let applications = { version: 1, migratedV1: true, activeId: '', items: [] };
 
   function read(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key) || 'null'); return value === null ? fallback : value; } catch (_error) { return fallback; } }
   function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (error) { console.warn('저장 실패:', error); return false; } }
   function newApplication(source = {}) {
-    return { id: `app_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`, company: '', role: '', text: '', keywords: [], status: '작성 중', deadline: '', draft: freshDraft(), updatedAt: new Date().toISOString(), ...source };
+    const question = freshQuestion();
+    return { id: newId('app'), company: '', role: '', text: '', keywords: [], status: '작성 중', deadline: '', questions: [question], activeQuestionId: question.id, updatedAt: new Date().toISOString(), ...source };
+  }
+  // 예전 형식(지원 건마다 draft 하나)을 문항 목록으로 바꿉니다. 바뀌었으면 true를 돌려줍니다.
+  function normalizeApplication(app) {
+    let changed = false;
+    if (!Array.isArray(app.questions) || !app.questions.some((item) => item && typeof item.id === 'string')) {
+      app.questions = [freshQuestion(app.draft && typeof app.draft === 'object' ? JSON.parse(JSON.stringify(app.draft)) : {})]; changed = true;
+    }
+    app.questions = app.questions.filter((item) => item && typeof item.id === 'string');
+    if ('draft' in app) { delete app.draft; changed = true; }
+    if (!app.questions.some((item) => item.id === app.activeQuestionId)) { app.activeQuestionId = app.questions[0].id; changed = true; }
+    return changed;
   }
   function activeApplication() { return applications.items.find((item) => item.id === applications.activeId) || null; }
-  function useApplication(app) {
-    applications.activeId = app ? app.id : '';
-    job = app ? { company: app.company || '', role: app.role || '', text: app.text || '', keywords: Array.isArray(app.keywords) ? app.keywords : [] } : { ...SAMPLE_JOB, keywords: core.extractJobKeywords(SAMPLE_JOB.text, 5) };
-    state = { ...freshDraft(), ...JSON.parse(JSON.stringify((app && app.draft) || {})) };
+  function useQuestion(app, questionId) {
+    const source = app ? (app.questions.find((item) => item.id === questionId) || app.questions[0]) : null;
+    if (app) app.activeQuestionId = source.id;
+    state = source ? { ...freshDraft(), ...JSON.parse(JSON.stringify(source)) } : freshQuestion();
     state.usedExpIds = Array.isArray(state.usedExpIds) ? state.usedExpIds.filter((id) => experiences.some((card) => card.id === id)) : [];
     state.factSheet = Array.isArray(state.factSheet) ? state.factSheet : [];
     state.drafts = Array.isArray(state.drafts) ? state.drafts : [];
   }
-  // 현재 공고·초안을 활성 지원 건에 기록합니다. 내용이 바뀔 때만 수정 시각을 갱신합니다.
+  function useApplication(app) {
+    applications.activeId = app ? app.id : '';
+    job = app ? { company: app.company || '', role: app.role || '', text: app.text || '', keywords: Array.isArray(app.keywords) ? app.keywords : [] } : { ...SAMPLE_JOB, keywords: core.extractJobKeywords(SAMPLE_JOB.text, 5) };
+    useQuestion(app, app && app.activeQuestionId);
+  }
+  // 지원 건의 문항 목록. 지금 편집 중인 문항은 state의 최신 내용으로 바꿔 돌려줍니다.
+  function currentQuestions() {
+    const app = activeApplication();
+    if (!app) return [state];
+    return app.questions.some((item) => item.id === state.id) ? app.questions.map((item) => item.id === state.id ? state : item) : [...app.questions, state];
+  }
+  // 현재 공고·문항을 활성 지원 건에 기록합니다. 내용이 바뀔 때만 수정 시각을 갱신합니다.
   function persistApplication() {
     let app = activeApplication();
-    if (!app) { app = newApplication(); applications.items.unshift(app); applications.activeId = app.id; }
-    const next = { company: job.company, role: job.role, text: job.text, keywords: job.keywords, draft: state };
-    const before = JSON.stringify({ company: app.company, role: app.role, text: app.text, keywords: app.keywords, draft: app.draft });
+    if (!app) { app = newApplication({ questions: [], activeQuestionId: '' }); applications.items.unshift(app); applications.activeId = app.id; }
+    const next = { company: job.company, role: job.role, text: job.text, keywords: job.keywords, questions: currentQuestions(), activeQuestionId: state.id };
+    const before = JSON.stringify({ company: app.company, role: app.role, text: app.text, keywords: app.keywords, questions: app.questions, activeQuestionId: app.activeQuestionId });
     if (before === JSON.stringify(next)) return;
     Object.assign(app, JSON.parse(JSON.stringify(next)), { updatedAt: new Date().toISOString() });
     save(KEYS.applications, applications); renderApplicationBar();
@@ -60,7 +87,11 @@
     const savedCards = read(KEYS.experiences, null);
     experiences = Array.isArray(savedCards) ? savedCards.map((item) => { try { return core.normalizeExperienceCard(item); } catch (_error) { return null; } }).filter(Boolean) : SAMPLE_CARDS.map(core.normalizeExperienceCard);
     const savedApps = read(KEYS.applications, null);
-    if (savedApps && Array.isArray(savedApps.items)) applications = { version: 1, migratedV1: true, ...savedApps, items: savedApps.items.filter((item) => item && typeof item.id === 'string') };
+    if (savedApps && Array.isArray(savedApps.items)) {
+      applications = { version: 1, migratedV1: true, ...savedApps, items: savedApps.items.filter((item) => item && typeof item.id === 'string') };
+      const changed = applications.items.map(normalizeApplication).some(Boolean);
+      if (changed) save(KEYS.applications, applications);
+    }
     useApplication(activeApplication() || applications.items[0] || null);
   }
 
@@ -146,7 +177,48 @@
     if (!experiences.length) selector.append(make('p', '', '먼저 경험 카드를 등록하세요.'));
     if (el('v2DraftQuestion')) el('v2DraftQuestion').value = state.question || '';
     if (el('v2DraftLimit')) el('v2DraftLimit').value = state.limit || 700;
-    renderFactSheet(); renderWorkspace(); renderHistory();
+    renderQuestionTabs(); renderFactSheet(); renderWorkspace(); renderHistory();
+  }
+  function questionStatus(question) {
+    const length = String(question.finalText || '').length, limit = Number(question.limit) || 700;
+    if (question.drafts && question.drafts.length) return `저장 ${question.drafts.length}회 · ${length}/${limit}자`;
+    if (length) return `작성 중 · ${length}/${limit}자`;
+    if (question.factSheet && question.factSheet.length) return '팩트 시트 단계';
+    return '시작 전';
+  }
+  function renderQuestionTabs() {
+    const box = el('v2QuestionTabs'); if (!box) return; box.replaceChildren();
+    const questions = currentQuestions();
+    questions.forEach((question, index) => {
+      const active = question.id === state.id;
+      const button = make('button', `question-tab${active ? ' is-active' : ''}${question.drafts && question.drafts.length ? ' is-saved' : ''}`); button.type = 'button'; button.setAttribute('aria-pressed', String(active));
+      button.append(make('strong', '', `문항 ${index + 1}`), make('span', 'question-tab-text', (question.question || '').trim() || '문항을 입력하세요'), make('small', '', questionStatus(question)));
+      button.addEventListener('click', () => { if (active) return; persistApplication(); useQuestion(activeApplication(), question.id); save(KEYS.applications, applications); renderDraftTab(); });
+      box.append(button);
+    });
+    if (el('v2QuestionCountBadge')) el('v2QuestionCountBadge').textContent = `문항 ${questions.length}개`;
+    if (el('btnAddQuestion')) el('btnAddQuestion').disabled = questions.length >= MAX_QUESTIONS;
+    if (el('btnDeleteQuestion')) el('btnDeleteQuestion').disabled = questions.length <= 1;
+  }
+  function initQuestions() {
+    el('btnAddQuestion')?.addEventListener('click', () => {
+      persistApplication(); const app = activeApplication();
+      if (app.questions.length >= MAX_QUESTIONS) return alert(`문항은 지원 건마다 최대 ${MAX_QUESTIONS}개까지 추가할 수 있습니다.`);
+      const question = freshQuestion({ question: '' }); app.questions.push(question);
+      useQuestion(app, question.id); persistApplication(); save(KEYS.applications, applications); renderDraftTab(); el('v2DraftQuestion')?.focus();
+    });
+    el('btnDeleteQuestion')?.addEventListener('click', () => {
+      const app = activeApplication(); if (!app || app.questions.length <= 1) return;
+      const index = app.questions.findIndex((item) => item.id === state.id);
+      if (!confirm(`문항 ${index + 1}과 이 문항의 저장 기록을 삭제할까요?`)) return;
+      app.questions = app.questions.filter((item) => item.id !== state.id);
+      useQuestion(app, app.questions[Math.max(0, index - 1)].id); app.updatedAt = new Date().toISOString(); save(KEYS.applications, applications); renderDraftTab();
+    });
+    el('btnCopyAllQuestions')?.addEventListener('click', async () => {
+      const text = currentQuestions().map((item, index) => `[문항 ${index + 1}] ${(item.question || '').trim()}\n\n${(item.finalText || '').trim() || '(아직 작성하지 않음)'}`).join('\n\n\n');
+      try { await navigator.clipboard.writeText(text); if (el('v2QuestionMessage')) el('v2QuestionMessage').textContent = '전체 문항을 복사했습니다.'; } catch (_error) { alert('자동 복사를 사용할 수 없습니다. 문항별로 편집창에서 복사해 주세요.'); }
+    });
+    el('v2DraftQuestion')?.addEventListener('input', (event) => { state.question = event.target.value; saveDraft(); renderQuestionTabs(); });
   }
   function renderFactSheet() {
     const container = el('v2FactSheetContainer'), list = el('v2FactSheetList'); if (!container || !list) return;
@@ -198,15 +270,15 @@
       try { state.aiDraft = workflow.generateFirstPersonDraft(state.factSheet, chosenCards(), { question: state.question, keywords: job.keywords || [], limit: Number(el('v2DraftLimit').value) || state.limit }); state.finalText = state.aiDraft; state.userFinished = false; saveDraft(); renderWorkspace(); el('v2DraftWorkspace')?.scrollIntoView({ behavior: 'smooth' }); }
       catch (error) { alert(error.message); }
     });
-    el('v2FinalText')?.addEventListener('input', (event) => { state.finalText = event.target.value; state.userFinished = false; if (el('v2UserFinishedCheckbox')) el('v2UserFinishedCheckbox').checked = false; saveDraft(); updateInspection(); });
+    el('v2FinalText')?.addEventListener('input', (event) => { state.finalText = event.target.value; state.userFinished = false; if (el('v2UserFinishedCheckbox')) el('v2UserFinishedCheckbox').checked = false; saveDraft(); updateInspection(); renderQuestionTabs(); });
     el('v2UserFinishedCheckbox')?.addEventListener('change', (event) => { state.userFinished = event.target.checked; saveDraft(); updateInspection(); });
-    el('v2DraftLimit')?.addEventListener('input', (event) => { state.limit = Number(event.target.value) || 700; saveDraft(); updateInspection(); });
+    el('v2DraftLimit')?.addEventListener('input', (event) => { state.limit = Number(event.target.value) || 700; saveDraft(); updateInspection(); renderQuestionTabs(); });
     el('btnSaveFinalDraft')?.addEventListener('click', () => {
       const report = updateInspection();
       if (!report.canSave) return alert('기록 공백 표기가 빠져 저장할 수 없습니다.');
       if (!state.factSheetConfirmed || !state.userFinished || !state.aiDraft || state.finalText.trim() === state.aiDraft.trim()) return alert('팩트 시트를 확인하고 초안을 직접 수정한 뒤 완료 체크를 해 주세요.');
       const now = new Date().toISOString(); state.drafts.push({ id: `draft_${Date.now()}`, jobId: job.id || '', question: state.question, limit: state.limit, usedExpIds: state.usedExpIds.slice(), factSheet: state.factSheet.map((item) => ({ ...item })), aiDraft: state.aiDraft, finalText: state.finalText, userFinished: true, createdAt: now });
-      saveDraft(); renderHistory(); if (el('v2DraftMessage')) el('v2DraftMessage').textContent = '최종본을 새 기록으로 저장했습니다.';
+      saveDraft(); renderHistory(); renderQuestionTabs(); if (el('v2DraftMessage')) el('v2DraftMessage').textContent = '최종본을 새 기록으로 저장했습니다.';
     });
     el('btnCopyDraft')?.addEventListener('click', async () => { try { await navigator.clipboard.writeText(el('v2FinalText').value); } catch (_error) { alert('자동 복사를 사용할 수 없습니다. 편집창에서 직접 복사해 주세요.'); } });
     el('btnResetToAiDraft')?.addEventListener('click', () => { if (!state.aiDraft || !confirm('현재 내용을 자동 초안으로 되돌릴까요?')) return; state.finalText = state.aiDraft; state.userFinished = false; saveDraft(); renderWorkspace(); });
@@ -265,7 +337,7 @@
     window.addEventListener('plen:workspace-hydrated', () => { load(); renderAll(); });
   }
   document.addEventListener('DOMContentLoaded', () => {
-    load(); initTabs(); initExperience(); initJob(); initDraft(); initApplications();
+    load(); initTabs(); initExperience(); initJob(); initDraft(); initQuestions(); initApplications();
     renderAll();
   });
 })();

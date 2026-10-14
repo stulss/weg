@@ -3,7 +3,7 @@
   'use strict';
   const store = () => window.plenSupabaseResumeStore;
   const META_KEY = 'plen-sync-meta-v1';
-  const keys = ['plen-workbench-v1', 'plen-resume-v1', 'plen-v2-experiences', 'plen-v2-job', 'plen-v2-draft', 'plen-ritual-records-v1', 'plen-ritual-links-v1', META_KEY];
+  const keys = ['plen-workbench-v1', 'plen-resume-v1', 'plen-v2-experiences', 'plen-v2-applications', 'plen-v2-job', 'plen-v2-draft', 'plen-ritual-records-v1', 'plen-ritual-links-v1', META_KEY];
   const keySet = new Set(keys), maxChars = 3_500_000;
   let initialized = false, userId = '', hydrating = false, busy = false, locked = false, timer = 0, version = 0, serial = Promise.resolve();
   function status(message, kind = 'info') { window.dispatchEvent(new CustomEvent('plen:workspace-sync-status', { detail: { message, kind, configured: Boolean(store()?.configured), signedIn: Boolean(userId) } })); }

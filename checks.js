@@ -166,6 +166,18 @@ test('동기화 병합: 더 최근 수정이 이기고, 메타 없는 옛 자료
   const legacy = sync.mergeSnapshots({ [KEY]: JSON.stringify([{ id: 'a' }, { id: 'b' }]) }, { [KEY]: JSON.stringify([{ id: 'a' }]) });
   assert.deepEqual(JSON.parse(legacy[KEY]).map((item) => item.id), ['a', 'b']);
 });
+test('동기화 대상에 지원 건(문항 포함)이 들어 있고 지원 건 단위로 병합', () => {
+  const sync = global.window.plenSupabaseWorkspaceSync;
+  const KEY = 'plen-v2-applications', META = sync.META_KEY, T = Date.now() - 60_000;
+  const apps = (items) => JSON.stringify({ version: 1, activeId: items[0].id, items });
+  const a = { id: 'app_a', company: 'A', questions: [{ id: 'q1', question: '지원 동기' }, { id: 'q2', question: '협업 경험' }] };
+  const b = { id: 'app_b', company: 'B', questions: [{ id: 'q3', question: '입사 후 포부' }] };
+  const r = sync.readMeta(null); sync.recordChange(r, KEY, null, apps([a]), T + 100);
+  const l = sync.readMeta(null); sync.recordChange(l, KEY, null, apps([b]), T + 200);
+  const merged = JSON.parse(sync.mergeSnapshots({ [KEY]: apps([a]), [META]: JSON.stringify(r) }, { [KEY]: apps([b]), [META]: JSON.stringify(l) })[KEY]);
+  assert.deepEqual(merged.items.map((item) => item.id).sort(), ['app_a', 'app_b']);
+  assert.equal(merged.items.find((item) => item.id === 'app_a').questions.length, 2);
+});
 function runMigration(initial) {
   const store = new Map(Object.entries(initial));
   global.localStorage = { getItem: (key) => (store.has(key) ? store.get(key) : null), setItem: (key, value) => store.set(key, String(value)) };
@@ -200,6 +212,7 @@ test('초안 생성·편집·검사 스크립트가 브라우저 화면에 연�
   assert.match(ui, /generateFirstPersonDraft/); assert.match(ui, /inspectDraft\(/);
   assert.match(ui, /btnGenerateFactSheet/); assert.match(ui, /btnSaveFinalDraft/);
   assert.match(html, /assets\/js\/v1-migration\.js/); assert.match(html, /id="v2ApplicationSelect"/); assert.match(html, /id="v2DraftHistoryList"/);
+  assert.match(html, /id="v2QuestionTabs"/); assert.match(html, /id="btnAddQuestion"/); assert.match(ui, /normalizeApplication/);
   assert.doesNotMatch(html, /assets\/js\/(app|workbench|draft-generator|draft-stage4|draft-ui-guard)\.js/);
 });
 
