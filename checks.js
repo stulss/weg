@@ -132,6 +132,40 @@ test('영문 약어 키워드는 다른 단어 속에서 잡지 않음', () => {
   const found = core.extractJobKeywords('Python과 SQL로 대시보드를 만듭니다.\nDocs 문서를 정리합니다.', 5).map((item) => item.word);
   assert.ok(found.includes('데이터베이스')); assert.ok(!found.includes('사용자 경험 개선'));
 });
+test('동기화 병합: 다른 기기에서 삭제한 항목을 되살리지 않음', () => {
+  global.window = global.window || {};
+  require('./frontend/assets/js/supabase-workspace-sync.js');
+  const sync = global.window.plenSupabaseWorkspaceSync;
+  const KEY = 'plen-v2-experiences', META = sync.META_KEY, T = Date.now() - 60_000;
+  const cards = (ids) => JSON.stringify(ids.map((id) => ({ id, title: id })));
+  const meta = (fn) => { const m = sync.readMeta(null); fn(m); return JSON.stringify(m); };
+  // 원격(기기 A): a, b를 t=100에 추가. 로컬(기기 B): t=200에 b 삭제, t=210에 c 추가.
+  const remote = { [KEY]: cards(['a', 'b']), [META]: meta((m) => sync.recordChange(m, KEY, null, cards(['a', 'b']), T + 100)) };
+  const local = { [KEY]: cards(['a', 'c']), [META]: meta((m) => {
+    sync.recordChange(m, KEY, null, cards(['a', 'b']), T + 100); sync.recordChange(m, KEY, cards(['a', 'b']), cards(['a']), T + 200); sync.recordChange(m, KEY, cards(['a']), cards(['a', 'c']), T + 210);
+  }) };
+  const merged = sync.mergeSnapshots(remote, local);
+  assert.deepEqual(JSON.parse(merged[KEY]).map((item) => item.id), ['a', 'c']);
+  // 반대 방향: 로컬에 옛 b가 남아 있어도 원격의 더 최근 삭제가 이깁니다.
+  const back = sync.mergeSnapshots(merged, { [KEY]: cards(['a', 'b']), [META]: remote[META] });
+  assert.deepEqual(JSON.parse(back[KEY]).map((item) => item.id), ['a', 'c']);
+  // 삭제 뒤 다시 추가한 항목은 유지됩니다.
+  const readded = JSON.parse(merged[META]); sync.recordChange(readded, KEY, cards(['a', 'c']), cards(['a', 'c', 'b']), T + 300);
+  const again = sync.mergeSnapshots(merged, { [KEY]: cards(['a', 'c', 'b']), [META]: JSON.stringify(readded) });
+  assert.deepEqual(JSON.parse(again[KEY]).map((item) => item.id).sort(), ['a', 'b', 'c']);
+});
+test('동기화 병합: 더 최근 수정이 이기고, 메타 없는 옛 자료는 기존처럼 합침', () => {
+  const sync = global.window.plenSupabaseWorkspaceSync;
+  const KEY = 'plen-v2-experiences', JOB = 'plen-v2-job', META = sync.META_KEY, T = Date.now() - 60_000;
+  const r = sync.readMeta(null); sync.recordChange(r, KEY, null, JSON.stringify([{ id: 'a', title: '새 제목' }]), T + 500); sync.recordChange(r, JOB, null, JSON.stringify({ company: 'X' }), T + 100);
+  const l = sync.readMeta(null); sync.recordChange(l, KEY, null, JSON.stringify([{ id: 'a', title: '옛 제목' }]), T + 400); sync.recordChange(l, JOB, JSON.stringify({ company: 'X' }), JSON.stringify({ company: '' }), T + 300);
+  const merged = sync.mergeSnapshots(
+    { [KEY]: JSON.stringify([{ id: 'a', title: '새 제목' }]), [JOB]: JSON.stringify({ company: 'X' }), [META]: JSON.stringify(r) },
+    { [KEY]: JSON.stringify([{ id: 'a', title: '옛 제목' }]), [JOB]: JSON.stringify({ company: '' }), [META]: JSON.stringify(l) });
+  assert.equal(JSON.parse(merged[KEY])[0].title, '새 제목'); assert.equal(JSON.parse(merged[JOB]).company, '');
+  const legacy = sync.mergeSnapshots({ [KEY]: JSON.stringify([{ id: 'a' }, { id: 'b' }]) }, { [KEY]: JSON.stringify([{ id: 'a' }]) });
+  assert.deepEqual(JSON.parse(legacy[KEY]).map((item) => item.id), ['a', 'b']);
+});
 test('초안 생성·편집·검사 스크립트가 브라우저 화면에 연결됨', () => {
   const html = fs.readFileSync(path.join(__dirname, 'frontend/index.html'), 'utf8');
   const ui = fs.readFileSync(path.join(__dirname, 'frontend/assets/js/career-ui.js'), 'utf8');
