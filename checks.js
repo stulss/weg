@@ -166,14 +166,41 @@ test('동기화 병합: 더 최근 수정이 이기고, 메타 없는 옛 자료
   const legacy = sync.mergeSnapshots({ [KEY]: JSON.stringify([{ id: 'a' }, { id: 'b' }]) }, { [KEY]: JSON.stringify([{ id: 'a' }]) });
   assert.deepEqual(JSON.parse(legacy[KEY]).map((item) => item.id), ['a', 'b']);
 });
+function runMigration(initial) {
+  const store = new Map(Object.entries(initial));
+  global.localStorage = { getItem: (key) => (store.has(key) ? store.get(key) : null), setItem: (key, value) => store.set(key, String(value)) };
+  global.window = { plenCareerCore: core };
+  delete require.cache[require.resolve('./frontend/assets/js/v1-migration.js')];
+  require('./frontend/assets/js/v1-migration.js');
+  const read = (key) => JSON.parse(store.get(key) || 'null');
+  return { read, rerun: () => global.window.plenV1Migration.migrate() };
+}
+test('v1 자료를 v2 지원 건·경험 카드·리추얼 키로 한 번 이전', () => {
+  const { read, rerun } = runMigration({
+    'plen-workbench-v1': JSON.stringify({ version: 1,
+      applications: [{ id: 'app1', company: '가상회사', role: '기획', job: posting, status: '제출 완료', deadline: '2026-11-01' }],
+      experiences: [{ id: 'v1card', name: '옛 경험', context: '상황', actions: '행동', outcome: '결과', keywords: ['협업'] }],
+      rituals: [{ id: 'r1', date: '2026-09-01', type: '아침', prompt: '목표', content: '기록' }], ritualLinks: { r1: ['v1card'] } }),
+    'plen-v2-job': JSON.stringify({ company: 'v2회사', role: '분석', text: posting, keywords: [] }),
+    'plen-v2-draft': JSON.stringify({ question: '문항', drafts: [{ id: 'd1', finalText: '저장본' }] })
+  });
+  const apps = read('plen-v2-applications');
+  assert.equal(apps.migratedV1, true); assert.deepEqual(apps.items.map((item) => item.company), ['v2회사', '가상회사']);
+  assert.equal(apps.items[0].draft.drafts.length, 1); assert.equal(apps.items[1].status, '제출 완료'); assert.equal(apps.items[1].keywords.length, 5);
+  const cards = read('plen-v2-experiences');
+  assert.equal(cards.length, 1); assert.equal(cards[0].id, 'v1card'); assert.equal(cards[0].title, '옛 경험'); assert.equal(cards[0].action, '행동');
+  assert.equal(read('plen-ritual-records-v1').length, 1); assert.deepEqual(read('plen-ritual-links-v1'), { r1: ['v1card'] });
+  rerun(); assert.equal(read('plen-v2-applications').items.length, 2); assert.equal(read('plen-v2-experiences').length, 1);
+});
 test('초안 생성·편집·검사 스크립트가 브라우저 화면에 연결됨', () => {
   const html = fs.readFileSync(path.join(__dirname, 'frontend/index.html'), 'utf8');
   const ui = fs.readFileSync(path.join(__dirname, 'frontend/assets/js/career-ui.js'), 'utf8');
-  const guard = fs.readFileSync(path.join(__dirname, 'frontend/assets/js/draft-ui-guard.js'), 'utf8');
   assert.match(html, /assets\/js\/career-core\.js/); assert.match(html, /assets\/js\/draft-inspection-core\.js/);
   assert.match(html, /assets\/js\/draft-workflow-core\.js/); assert.match(html, /assets\/js\/career-ui\.js/);
   assert.match(ui, /generateFirstPersonDraft/); assert.match(ui, /inspectDraft\(/);
-  assert.match(ui, /btnGenerateFactSheet/); assert.match(ui, /btnSaveFinalDraft/); assert.match(guard, /btnSaveFinalDraft/);
+  assert.match(ui, /btnGenerateFactSheet/); assert.match(ui, /btnSaveFinalDraft/);
+  assert.match(html, /assets\/js\/v1-migration\.js/); assert.match(html, /id="v2ApplicationSelect"/); assert.match(html, /id="v2DraftHistoryList"/);
+  assert.doesNotMatch(html, /assets\/js\/(app|workbench|draft-generator|draft-stage4|draft-ui-guard)\.js/);
 });
 
 test('9개 검사 정상 사례 모두 통과', () => {

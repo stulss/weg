@@ -115,7 +115,7 @@
     if (!user?.id) { userId = ''; locked = false; status('로그인하지 않은 변경 사항은 이 브라우저에 남고 로그인 후 계정 자료와 병합됩니다.'); return; }
     if (userId === user.id && !locked) return;
     userId = user.id; locked = false; status('계정 자료를 불러와 현재 브라우저 자료와 병합하는 중…', 'busy');
-    try { const response = await store().loadWorkspace(); if (userId !== user.id) return; const remote = response?.data?.items && typeof response.data.items === 'object' ? response.data.items : {}; const merged = safeSnapshot(mergeSnapshots(remote, snapshot())); writeLocal(merged); await saveRemote(merged, user.id); if (userId !== user.id) return; status('경험 카드, 지원 건·초안, 리추얼, 이력서 자료를 계정과 동기화했습니다.', 'success'); schedule(100); }
+    try { const response = await store().loadWorkspace(); if (userId !== user.id) return; const remote = response?.data?.items && typeof response.data.items === 'object' ? response.data.items : {}; const merged = safeSnapshot(mergeSnapshots(remote, snapshot())); writeLocal(merged); window.dispatchEvent(new CustomEvent('plen:workspace-hydrated')); await saveRemote(merged, user.id); if (userId !== user.id) return; status('경험 카드, 지원 건·초안, 리추얼, 이력서 자료를 계정과 동기화했습니다.', 'success'); schedule(100); }
     catch (error) { if (userId !== user.id) return; locked = true; status(`동기화 실패: ${error instanceof Error ? error.message : '오류'}. 기존 클라우드 자료를 보호하기 위해 자동 저장을 중지했습니다.`, 'error'); }
   }
   function patchStorage() {

@@ -1,7 +1,8 @@
 (() => {
   'use strict';
 
-  const KEYS = { experiences: 'plen-v2-experiences', job: 'plen-v2-job', draft: 'plen-v2-draft' };
+  const KEYS = { experiences: 'plen-v2-experiences', applications: 'plen-v2-applications' };
+  const STATUSES = ['작성 중', '제출 완료', '면접 진행', '마감'];
   const core = window.plenCareerCore;
   const workflow = window.plenDraftWorkflowCore;
   if (!core || !workflow || typeof core.inspectDraft !== 'function') {
@@ -18,11 +19,39 @@
     company: '원티드랩', role: '서비스 기획자 (Product Manager)',
     text: `[담당 업무]\n- 데이터 분석을 기반으로 프로덕트 주요 지표를 지속적으로 개선하고 사용자 행동 로그를 분석합니다.\n- 복잡한 비즈니스 문제 정의 및 근본적인 문제 해결 방안을 도출합니다.\n- 개발자, 디자이너와의 원활한 협업 및 커뮤니케이션을 리드합니다.\n- 사용자 경험 개선을 위해 정기적인 사용자 인터뷰와 사용성 조사를 주도합니다.\n- 성과 측정을 위한 가설 검증과 실험 설계, A/B 테스트를 실행합니다.\n\n[자격 요건]\n- 2년 이상의 프로덕트 기획 또는 데이터 기반 서비스 개선 경험이 있으신 분\n- 정량적 지표와 정성적 사용자 피드백을 모두 활용하여 의사결정을 내릴 수 있는 분\n- 프로젝트 일정 관리 및 스프린트 운영에 능숙하신 분`
   };
-  let experiences = [], job = { company: '', role: '', text: '', keywords: [] }, state = { question: '지원동기 및 직무 역량을 본인의 실제 경험을 바탕으로 서술해 주세요.', limit: 700, usedExpIds: [], factSheet: [], drafts: [] }, editingId = null;
+  const DEFAULT_DRAFT = { question: '지원동기 및 직무 역량을 본인의 실제 경험을 바탕으로 서술해 주세요.', limit: 700, usedExpIds: [], factSheet: [], factSheetConfirmed: false, aiDraft: '', finalText: '', userFinished: false, drafts: [] };
+  const freshDraft = () => JSON.parse(JSON.stringify(DEFAULT_DRAFT));
+  let experiences = [], job = { company: '', role: '', text: '', keywords: [] }, state = freshDraft(), editingId = null;
+  // 지원 건: 공고(job)와 초안 상태(state)를 회사별로 따로 보관합니다. 경험 카드는 모든 지원 건이 함께 씁니다.
+  let applications = { version: 1, migratedV1: true, activeId: '', items: [] };
 
   function read(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key) || 'null'); return value === null ? fallback : value; } catch (_error) { return fallback; } }
   function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (error) { console.warn('저장 실패:', error); return false; } }
-  function saveDraft() { save(KEYS.draft, state); }
+  function newApplication(source = {}) {
+    return { id: `app_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`, company: '', role: '', text: '', keywords: [], status: '작성 중', deadline: '', draft: freshDraft(), updatedAt: new Date().toISOString(), ...source };
+  }
+  function activeApplication() { return applications.items.find((item) => item.id === applications.activeId) || null; }
+  function useApplication(app) {
+    applications.activeId = app ? app.id : '';
+    job = app ? { company: app.company || '', role: app.role || '', text: app.text || '', keywords: Array.isArray(app.keywords) ? app.keywords : [] } : { ...SAMPLE_JOB, keywords: core.extractJobKeywords(SAMPLE_JOB.text, 5) };
+    state = { ...freshDraft(), ...JSON.parse(JSON.stringify((app && app.draft) || {})) };
+    state.usedExpIds = Array.isArray(state.usedExpIds) ? state.usedExpIds.filter((id) => experiences.some((card) => card.id === id)) : [];
+    state.factSheet = Array.isArray(state.factSheet) ? state.factSheet : [];
+    state.drafts = Array.isArray(state.drafts) ? state.drafts : [];
+  }
+  // 현재 공고·초안을 활성 지원 건에 기록합니다. 내용이 바뀔 때만 수정 시각을 갱신합니다.
+  function persistApplication() {
+    let app = activeApplication();
+    if (!app) { app = newApplication(); applications.items.unshift(app); applications.activeId = app.id; }
+    const next = { company: job.company, role: job.role, text: job.text, keywords: job.keywords, draft: state };
+    const before = JSON.stringify({ company: app.company, role: app.role, text: app.text, keywords: app.keywords, draft: app.draft });
+    if (before === JSON.stringify(next)) return;
+    Object.assign(app, JSON.parse(JSON.stringify(next)), { updatedAt: new Date().toISOString() });
+    save(KEYS.applications, applications); renderApplicationBar();
+  }
+  function saveJob() { persistApplication(); }
+  function saveDraft() { persistApplication(); }
+  function saveExperiences() { save(KEYS.experiences, experiences); document.dispatchEvent(new CustomEvent('plen:experience-cards-updated')); }
   function chosenCards() { return experiences.filter((card) => state.usedExpIds.includes(card.id)); }
   function el(id) { return document.getElementById(id); }
   function make(tag, className, text) { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; }
@@ -30,12 +59,9 @@
   function load() {
     const savedCards = read(KEYS.experiences, null);
     experiences = Array.isArray(savedCards) ? savedCards.map((item) => { try { return core.normalizeExperienceCard(item); } catch (_error) { return null; } }).filter(Boolean) : SAMPLE_CARDS.map(core.normalizeExperienceCard);
-    const savedJob = read(KEYS.job, null);
-    job = savedJob && typeof savedJob === 'object' ? { company: '', role: '', text: '', keywords: [], ...savedJob } : { ...SAMPLE_JOB, keywords: core.extractJobKeywords(SAMPLE_JOB.text, 5) };
-    state = { ...state, ...(read(KEYS.draft, {}) || {}) };
-    state.usedExpIds = Array.isArray(state.usedExpIds) ? state.usedExpIds : [];
-    state.factSheet = Array.isArray(state.factSheet) ? state.factSheet : [];
-    state.drafts = Array.isArray(state.drafts) ? state.drafts : [];
+    const savedApps = read(KEYS.applications, null);
+    if (savedApps && Array.isArray(savedApps.items)) applications = { version: 1, migratedV1: true, ...savedApps, items: savedApps.items.filter((item) => item && typeof item.id === 'string') };
+    useApplication(activeApplication() || applications.items[0] || null);
   }
 
   function renderExperienceList() {
@@ -58,7 +84,7 @@
       const remove = make('button', 'button button-quiet', '삭제'); remove.type = 'button'; remove.addEventListener('click', () => {
         if (!confirm(`'${card.title}' 경험 카드를 삭제하시겠습니까?`)) return;
         experiences = experiences.filter((item) => item.id !== card.id); state.usedExpIds = state.usedExpIds.filter((id) => id !== card.id); state.factSheet = state.factSheet.filter((fact) => fact.expId !== card.id); state.factSheetConfirmed = false;
-        save(KEYS.experiences, experiences); saveDraft(); renderExperienceList(); renderDraftTab();
+        saveExperiences(); saveDraft(); renderExperienceList(); renderDraftTab();
       });
       actions.append(edit, remove); article.append(actions); list.append(article);
     });
@@ -77,10 +103,10 @@
       const raw = { id: editingId || undefined, title: el('cardTitle').value, dateFrom: el('cardDateFrom').value, dateTo: el('cardDateTo').value, situation: el('cardSituation').value, task: el('cardTask').value, action: el('cardAction').value, result: el('cardResult').value, repeatDays: el('cardRepeatDays').value, evidence: quoteText ? [{ who: el('cardEvidenceWho').value, when: el('cardEvidenceWhen').value, quote: quoteText }] : [], tags: el('cardTags').value };
       let card; try { card = core.normalizeExperienceCard(raw); } catch (error) { alert(error.message); return; }
       experiences = editingId ? experiences.map((item) => item.id === editingId ? card : item) : [card, ...experiences];
-      state.factSheetConfirmed = false; save(KEYS.experiences, experiences); saveDraft(); resetCardForm(); renderExperienceList(); renderDraftTab();
+      state.factSheetConfirmed = false; saveExperiences(); saveDraft(); resetCardForm(); renderExperienceList(); renderDraftTab();
     });
     el('cardFormCancelBtn')?.addEventListener('click', resetCardForm);
-    el('btnLoadSampleCards')?.addEventListener('click', () => { experiences = SAMPLE_CARDS.map(core.normalizeExperienceCard); state.usedExpIds = []; state.factSheet = []; state.factSheetConfirmed = false; save(KEYS.experiences, experiences); saveDraft(); renderExperienceList(); renderDraftTab(); alert('가상 예시 경험 카드 3개를 불러왔습니다. 실제 자료와 혼동하지 마세요.'); });
+    el('btnLoadSampleCards')?.addEventListener('click', () => { experiences = SAMPLE_CARDS.map(core.normalizeExperienceCard); state.usedExpIds = []; state.factSheet = []; state.factSheetConfirmed = false; saveExperiences(); saveDraft(); renderExperienceList(); renderDraftTab(); alert('가상 예시 경험 카드 3개를 불러왔습니다. 실제 자료와 혼동하지 마세요.'); });
   }
   function renderKeywords() {
     const grid = el('v2KeywordGrid'); if (!grid) return; grid.replaceChildren();
@@ -89,7 +115,7 @@
     job.keywords.forEach((kw, index) => {
       const card = make('div', 'keyword-5-card'); const word = document.createElement('input'); word.value = kw.word; word.setAttribute('aria-label', `키워드 ${index + 1}`);
       const evidence = document.createElement('textarea'); evidence.value = kw.evidence; evidence.rows = 2; evidence.setAttribute('aria-label', `키워드 ${index + 1} 근거 문장`);
-      const status = make('small'); const check = () => { const valid = Boolean(evidence.value) && job.text.includes(evidence.value); status.textContent = valid ? '공고 원문 확인됨' : '근거 문장이 공고 원문과 다릅니다'; status.style.color = valid ? '#15803d' : '#b45309'; kw.word = word.value.trim(); kw.evidence = evidence.value; save(KEYS.job, job); };
+      const status = make('small'); const check = () => { const valid = Boolean(evidence.value) && job.text.includes(evidence.value); status.textContent = valid ? '공고 원문 확인됨' : '근거 문장이 공고 원문과 다릅니다'; status.style.color = valid ? '#15803d' : '#b45309'; if (kw.word !== word.value.trim() || kw.evidence !== evidence.value) { kw.word = word.value.trim(); kw.evidence = evidence.value; saveJob(); } };
       word.addEventListener('input', check); evidence.addEventListener('input', check); check(); card.append(word, evidence, status); grid.append(card);
     });
   }
@@ -101,10 +127,10 @@
     el('btnExtractKeywords')?.addEventListener('click', () => {
       const text = el('v2JobPostingText').value.trim(); if (!text) return alert('채용공고 본문을 입력해 주세요.');
       job = { company: el('v2CompanyName').value.trim(), role: el('v2TargetRole').value.trim(), text, keywords: core.extractJobKeywords(text, 5) };
-      state.factSheetConfirmed = false; save(KEYS.job, job); saveDraft(); renderKeywords(); renderDraftTab();
+      state.factSheetConfirmed = false; saveJob(); saveDraft(); renderKeywords(); renderDraftTab();
       if (job.keywords.length < 5) alert(`공고 원문에서 ${job.keywords.length}개 키워드를 추출했습니다. 원문을 확인해 주세요.`);
     });
-    el('btnLoadSampleJob')?.addEventListener('click', () => { job = { ...SAMPLE_JOB, keywords: core.extractJobKeywords(SAMPLE_JOB.text, 5) }; state.factSheetConfirmed = false; save(KEYS.job, job); saveDraft(); renderJob(); renderDraftTab(); alert('가상 예시 채용공고를 불러왔습니다.'); });
+    el('btnLoadSampleJob')?.addEventListener('click', () => { job = { ...SAMPLE_JOB, keywords: core.extractJobKeywords(SAMPLE_JOB.text, 5) }; state.factSheetConfirmed = false; saveJob(); saveDraft(); renderJob(); renderDraftTab(); alert('가상 예시 채용공고를 불러왔습니다.'); });
   }
   function renderDraftTab() {
     const selector = el('v2DraftCardSelector'); if (!selector) return; selector.replaceChildren();
@@ -193,8 +219,53 @@
       if (tab === 'experiences') renderExperienceList(); if (tab === 'job') renderJob(); if (tab === 'draft') renderDraftTab();
     }));
   }
+  function applicationLabel(app) {
+    const name = [app.company, app.role].filter(Boolean).join(' · ') || '이름 없는 지원 건';
+    return `${name} — ${app.status || '작성 중'}${app.deadline ? ` · 마감 ${app.deadline}` : ''}`;
+  }
+  function renderApplicationBar() {
+    const select = el('v2ApplicationSelect'); if (!select) return;
+    select.replaceChildren();
+    if (!applications.items.length) { const option = make('option', '', '가상 예시 공고 (아직 저장 안 됨)'); option.value = ''; select.append(option); }
+    applications.items.forEach((app) => { const option = make('option', '', applicationLabel(app)); option.value = app.id; select.append(option); });
+    select.value = applications.activeId || '';
+    const app = activeApplication();
+    el('v2ApplicationStatus').value = app?.status || '작성 중'; el('v2ApplicationDeadline').value = app?.deadline || '';
+    el('v2ApplicationStatus').disabled = !app; el('v2ApplicationDeadline').disabled = !app; el('btnDeleteApplication').disabled = !app;
+  }
+  function renderAll() { renderApplicationBar(); renderExperienceList(); renderJob(); renderDraftTab(); }
+  function updateApplicationMeta(patch) {
+    const app = activeApplication(); if (!app) return;
+    Object.assign(app, patch, { updatedAt: new Date().toISOString() }); save(KEYS.applications, applications); renderApplicationBar();
+  }
+  function initApplications() {
+    if (!el('v2ApplicationSelect')) return;
+    el('v2ApplicationSelect').addEventListener('change', (event) => {
+      const app = applications.items.find((item) => item.id === event.target.value); if (!app) return;
+      useApplication(app); save(KEYS.applications, applications); renderAll();
+    });
+    el('v2ApplicationStatus').addEventListener('change', (event) => { if (STATUSES.includes(event.target.value)) updateApplicationMeta({ status: event.target.value }); });
+    el('v2ApplicationDeadline').addEventListener('change', (event) => updateApplicationMeta({ deadline: event.target.value }));
+    el('btnNewApplication').addEventListener('click', () => {
+      if (applications.items.length >= 30) return alert('지원 건은 최대 30개까지 보관할 수 있습니다.');
+      const app = newApplication(); applications.items.unshift(app); useApplication(app); save(KEYS.applications, applications); renderAll();
+      document.querySelector('.v2-tab-btn[data-tab="job"]')?.click(); el('v2CompanyName')?.focus();
+    });
+    el('btnDeleteApplication').addEventListener('click', () => {
+      const app = activeApplication(); if (!app) return;
+      if (!confirm(`'${applicationLabel(app)}' 지원 건과 그 초안 기록을 삭제할까요?`)) return;
+      applications.items = applications.items.filter((item) => item.id !== app.id);
+      useApplication(applications.items[0] || null); save(KEYS.applications, applications); renderAll();
+    });
+    window.addEventListener('storage', (event) => {
+      if (event.key !== KEYS.applications && event.key !== KEYS.experiences) return;
+      load(); renderAll();
+    });
+    // 로그인 직후 계정 자료가 이 탭의 localStorage에 병합되면 화면을 다시 그립니다.
+    window.addEventListener('plen:workspace-hydrated', () => { load(); renderAll(); });
+  }
   document.addEventListener('DOMContentLoaded', () => {
-    load(); initTabs(); initExperience(); initJob(); initDraft();
-    renderExperienceList(); renderJob(); renderDraftTab();
+    load(); initTabs(); initExperience(); initJob(); initDraft(); initApplications();
+    renderAll();
   });
 })();

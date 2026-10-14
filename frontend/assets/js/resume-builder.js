@@ -5,7 +5,7 @@
   if (!builder) return;
 
   const storageKey = 'plen-resume-v1';
-  const workbenchStorageKey = 'plen-workbench-v1';
+  const experienceCardsKey = 'plen-v2-experiences';
   const maximumPayloadCharacters = 500_000;
   const maximumSkills = 30;
   const maximumExperienceEntries = 12;
@@ -578,16 +578,17 @@
   function readExperienceLibrary() {
     if (!nativeStorage) return [];
     try {
-      const parsed = JSON.parse(localStorage.getItem(workbenchStorageKey) || 'null');
-      if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.experiences)) return [];
-      return parsed.experiences.filter((item) => item && typeof item === 'object' && !Array.isArray(item))
+      const parsed = JSON.parse(localStorage.getItem(experienceCardsKey) || 'null');
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((item) => item && typeof item === 'object' && !Array.isArray(item))
         .map((item) => ({
           id: typeof item.id === 'string' && item.id.length <= 100 ? item.id : '',
-          name: cleanText(item.name, 60),
-          context: cleanText(item.context, 2400),
-          actions: cleanText(item.actions, 3000),
-          outcome: cleanText(item.outcome, 2400),
-          keywords: normalizeTags(item.keywords, 8, 32)
+          name: cleanText(item.title, 60),
+          context: cleanText([item.situation, item.task].filter(Boolean).join(' / '), 2400),
+          actions: cleanText(item.action, 3000),
+          outcome: cleanText(item.result, 2400),
+          period: cleanText([item.dateFrom, item.dateTo].filter(Boolean).join(' ~ '), 60),
+          keywords: normalizeTags(item.tags, 8, 32)
         }))
         .filter((item) => item.id && item.name);
     } catch (_error) {
@@ -819,7 +820,7 @@
     fillCollectionEditor('experience', {
       title: source.name,
       organization: '',
-      period: '',
+      period: source.period || '',
       description,
       keywords: source.keywords
     }, { libraryId: source.id });

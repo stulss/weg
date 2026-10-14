@@ -484,3 +484,11 @@
   color: #64748b;
 }
 
+
+/* 지원 건 선택 바 */
+.v2-application-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; padding: 10px 12px; border: 1px solid #e3e8dc; border-radius: 9px; background: #fff; }
+.v2-application-bar label { color: #435044; font-size: .85rem; font-weight: 700; }
+.v2-application-bar select, .v2-application-bar input { min-height: 34px; padding: 4px 8px; border: 1px solid #d9dfd2; border-radius: 6px; background: #fff; font: inherit; font-size: .85rem; }
+.v2-application-bar select, .v2-application-bar input { width: auto; flex: 0 0 auto; }
+.v2-application-bar #v2ApplicationSelect { flex: 1 1 220px; min-width: 0; width: auto; }
+.v2-application-bar .button { min-height: 34px; padding: 5px 10px; font-size: .82rem; }

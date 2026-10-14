@@ -7,7 +7,10 @@
   const core = window.plenRitualCore;
   if (!core) return;
 
-  const storageKey = 'plen-workbench-v1';
+  // 리추얼 기록과 연결은 전용 키에 두고, 경험 카드는 v2 카드(plen-v2-experiences)를 읽기만 합니다.
+  const ritualKey = 'plen-ritual-records-v1';
+  const linkKey = 'plen-ritual-links-v1';
+  const experienceKey = 'plen-v2-experiences';
   const maxStoredRecords = 2000;
   const maxPayloadCharacters = 1_500_000;
   const maxLinksPerRecord = 12;
@@ -47,7 +50,7 @@
 
   const nativeStorage = (() => {
     try {
-      const probe = `${storageKey}-ritual-probe`;
+      const probe = `${ritualKey}-probe`;
       localStorage.setItem(probe, '1');
       localStorage.removeItem(probe);
       return true;
@@ -108,46 +111,32 @@
     };
   }
 
-  function readState() {
-    if (!nativeStorage) return { experiences: [], applications: [], rituals: [], ritualLinks: {} };
-    try {
-      const parsed = JSON.parse(localStorage.getItem(storageKey) || 'null');
-      if (!parsed || parsed.version !== 1) return { experiences: [], applications: [], rituals: [], ritualLinks: {} };
+  function readJson(key, fallback) {
+    try { const value = JSON.parse(localStorage.getItem(key) || 'null'); return value === null ? fallback : value; } catch (_error) { return fallback; }
+  }
 
-      const experiences = Array.isArray(parsed.experiences)
-        ? parsed.experiences.slice(0, 12)
-          .filter((item) => item && typeof item === 'object' && !Array.isArray(item))
-          .map((item) => ({
-            id: typeof item.id === 'string' && item.id.length <= 100 ? item.id : '',
-            name: cleanString(item.name, 60).trim()
-          }))
-          .filter((item) => item.id && item.name)
-        : [];
-      const rituals = Array.isArray(parsed.rituals)
-        ? parsed.rituals.slice(0, maxStoredRecords).map(normalizeStoredRecord).filter(Boolean)
-        : [];
-      const rawLinks = parsed.ritualLinks && typeof parsed.ritualLinks === 'object' && !Array.isArray(parsed.ritualLinks)
-        ? parsed.ritualLinks
-        : {};
-      const ritualLinks = {};
-      const recordIds = new Set(rituals.map((record) => record.id));
-      Object.entries(rawLinks).slice(0, maxStoredRecords).forEach(([recordId, ids]) => {
-        if (recordIds.has(recordId)) ritualLinks[recordId] = validateLinkedTo(ids);
-      });
-      rituals.forEach((record) => {
-        if (ritualLinks[record.id]) record.linkedTo = ritualLinks[record.id];
-        else if (record.linkedTo.length) ritualLinks[record.id] = record.linkedTo;
-      });
-      return {
-        version: 1,
-        experiences,
-        applications: Array.isArray(parsed.applications) ? parsed.applications : [],
-        rituals,
-        ritualLinks
-      };
-    } catch (_error) {
-      return { experiences: [], applications: [], rituals: [], ritualLinks: {} };
-    }
+  function readState() {
+    if (!nativeStorage) return { experiences: [], rituals: [], ritualLinks: {} };
+    const cards = readJson(experienceKey, []);
+    const experiences = Array.isArray(cards)
+      ? cards.filter((item) => item && typeof item === 'object' && !Array.isArray(item))
+        .map((item) => ({ id: typeof item.id === 'string' && item.id.length <= 100 ? item.id : '', name: cleanString(item.title, 60).trim() }))
+        .filter((item) => item.id && item.name)
+      : [];
+    const storedRituals = readJson(ritualKey, []);
+    const rituals = Array.isArray(storedRituals) ? storedRituals.slice(0, maxStoredRecords).map(normalizeStoredRecord).filter(Boolean) : [];
+    const storedLinks = readJson(linkKey, {});
+    const rawLinks = storedLinks && typeof storedLinks === 'object' && !Array.isArray(storedLinks) ? storedLinks : {};
+    const ritualLinks = {};
+    const recordIds = new Set(rituals.map((record) => record.id));
+    Object.entries(rawLinks).slice(0, maxStoredRecords).forEach(([recordId, ids]) => {
+      if (recordIds.has(recordId)) ritualLinks[recordId] = validateLinkedTo(ids);
+    });
+    rituals.forEach((record) => {
+      if (ritualLinks[record.id]) record.linkedTo = ritualLinks[record.id];
+      else if (record.linkedTo.length) ritualLinks[record.id] = record.linkedTo;
+    });
+    return { experiences, rituals, ritualLinks };
   }
 
   function makeSafePayload(nextRecords, nextLinks, existingState) {
@@ -161,7 +150,7 @@
       if (validIds.length) safeLinks[id] = validIds;
     });
     safeRecords.forEach((record) => { record.linkedTo = safeLinks[record.id] || []; });
-    return { ...existingState, version: 1, rituals: safeRecords, ritualLinks: safeLinks };
+    return { rituals: safeRecords, ritualLinks: safeLinks };
   }
 
   function persist(nextRecords = records, nextLinks = links) {
@@ -173,12 +162,14 @@
       // 최신 저장본에 병합해 경험 카드·지원 건의 동시 수정 사항을 덮어쓰지 않습니다.
       const current = readState();
       const payload = makeSafePayload(nextRecords, nextLinks, current);
-      const serialized = JSON.stringify(payload);
-      if (serialized.length > maxPayloadCharacters) {
+      const serialized = JSON.stringify(payload.rituals);
+      const serializedLinks = JSON.stringify(payload.ritualLinks);
+      if (serialized.length + serializedLinks.length > maxPayloadCharacters) {
         setStatus('저장 공간이 부족해 리추얼 기록을 저장하지 못했습니다. 오래된 기록이나 다른 저장 자료를 정리해 주세요.', true);
         return false;
       }
-      localStorage.setItem(storageKey, serialized);
+      localStorage.setItem(ritualKey, serialized);
+      localStorage.setItem(linkKey, serializedLinks);
       records = payload.rituals;
       links = payload.ritualLinks;
       return true;
@@ -782,7 +773,7 @@
   }
 
   function handleStorageChange(event) {
-    if (event.key !== storageKey) return;
+    if (![ritualKey, linkKey, experienceKey].includes(event.key)) return;
     const saved = readState();
     records = saved.rituals;
     links = saved.ritualLinks;
@@ -808,6 +799,7 @@
   if (exportButton) exportButton.addEventListener('click', exportCsv);
   document.addEventListener('plen:experience-cards-updated', refreshExperienceLinks);
   window.addEventListener('storage', handleStorageChange);
+  window.addEventListener('plen:workspace-hydrated', () => handleStorageChange({ key: ritualKey }));
 
   const saved = readState();
   records = saved.rituals;
